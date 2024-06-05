@@ -1,0 +1,44 @@
+[project]
+name = "fused-local"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Gabe Joseph", email = "gjoseph92@gmail.com" }
+]
+dependencies = [
+    "rio-tiler>=6.6.1",
+    "rio-viz>=0.12.2",
+    "pystac-client>=0.8.2",
+    "planetary-computer>=1.0.0",
+    "numpy>=1.26.4",
+    "xarray>=2024.5.0",
+    "attrs>=23.2.0",
+    "odc-geo>=0.4.5",
+    "morecantile>=5.3.0",
+    "fastapi>=0.111.0",
+    "pydantic>=2.7.2",
+    "hypercorn>=0.17.3",
+    "pydeck>=0.9.1",
+    "pillow>=10.3.0",
+    "odc-stac>=0.3.9",
+    "geocube>=0.5.2",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "ipython>=8.25.0",
+    "jupyterlab>=4.2.1",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fused_local"]
