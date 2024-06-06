@@ -13,3 +13,7 @@ node_modules
 # JS output
 **/frontend/*.js*
 dist
+
+# self-signed certs
+cert.pem
+key.pem
