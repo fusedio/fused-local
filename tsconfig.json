@@ -1,0 +1,29 @@
+{
+    "include": [
+        "js/**/*"
+    ],
+    "exclude": [
+        "node_modules"
+    ],
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "module": "ES2022",
+        "outDir": "./dist",
+        "allowJs": true,
+        "target": "ES2022",
+        "declaration": true,
+        "noEmit": true,
+        "noEmitOnError": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "allowImportingTsExtensions": true,
+        "jsx": "react-jsx",
+        "skipLibCheck": true,
+        "strict": true,
+        "strictNullChecks": true,
+        // "lib": [
+        //   "es2019.array", "es6", "dom"
+        // ],
+        "rootDir": "."
+    }
+}

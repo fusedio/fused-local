@@ -1,13 +1,15 @@
+from pathlib import Path
+
 import pydeck as pdk
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 from odc.geo import XY
 from odc.geo.gridspec import GridSpec
 
+from fused_local import example
 from fused_local.lib import TileFunc
 from fused_local.render import to_png
-
-from fused_local import example
 
 app = FastAPI()
 
@@ -22,7 +24,7 @@ pdk.settings.custom_libraries = [
 ]
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/map", response_class=HTMLResponse)
 async def root():
     view_state = pdk.ViewState(
         longitude=-105.78,
@@ -80,3 +82,12 @@ def tile(
 @app.get("/tiles")
 def tile_layers():
     return list(TileFunc._instances.keys())
+
+
+# put at end so that it doesn't shadow other routes
+# https://stackoverflow.com/a/73916745
+app.mount(
+    "/",
+    StaticFiles(directory=Path(__file__).parent / "frontend", html=True),
+    name="static",
+)

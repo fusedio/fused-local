@@ -8,3 +8,8 @@ wheels/
 
 # venv
 .venv
+node_modules
+
+# JS output
+**/frontend/*.js*
+dist
