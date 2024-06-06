@@ -22,7 +22,8 @@ except FileExistsError:
     pass
 
 
-def cache(func: Callable[P, R], expire: int | None = 5 * 60) -> Callable[P, R]:
+# TODO can't actually pass `expire` into decorator, needs another level of nesting
+def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P, R]:
     func_key = tokenize(func)
 
     @functools.wraps(func)
