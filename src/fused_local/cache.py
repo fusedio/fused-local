@@ -33,21 +33,27 @@ def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P
         except TokenizationError:
             # not cacheable
             # TODO log
+            print(f"not cacheable {func} {args}")
             return func(*args, **kwargs)
 
         lock_key = f"{key}-lock"
         try:
-            return _cache[key]  # type: ignore
+            r = _cache[key]  # type: ignore
+            print(f"cache hit {func} {args}")
+            return r
         except KeyError:
             pass
 
         with diskcache.Lock(_cache, lock_key, expire=expire):
             # may have been added while waiting for lock
             try:
-                return _cache[key]  # type: ignore
+                r = _cache[key]  # type: ignore
+                print(f"cache hit 2 {func} {args}")
+                return r
             except KeyError:
                 pass
 
+            print(f"actually computing {func} {args}")
             result = func(*args, **kwargs)
             _cache.set(key, result, expire=expire)
             return result
