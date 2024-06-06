@@ -1,10 +1,16 @@
 from functools import singledispatch
+
+import matplotlib.colors
 import numpy as np
 import xarray as xr
-import matplotlib.colors
+from fastapi import HTTPException
+from odc.geo import XY
+from odc.geo.gridspec import GridSpec
 
 # TODO vendor all this
-from stackstac.show import arr_to_png, Range
+from stackstac.show import Range, arr_to_png
+
+from fused_local.lib import TileFunc
 
 
 @singledispatch
@@ -82,3 +88,30 @@ def np_to_png(
         )
 
     return arr_to_png(arr, range, cmap=cm, checkerboard=checkerboard)
+
+
+def render_tile(
+    layer: str,
+    z: int,
+    x: int,
+    y: int,
+    vmin: float,
+    vmax: float,
+    cmap: str | None = None,
+) -> bytes:
+    # TODO separation of concerns, raising HTTP error is odd here?
+    # that's just being pedantic though
+    try:
+        func = TileFunc._instances[layer]
+    except KeyError:
+        raise HTTPException(
+            status_code=404, detail=f"Tile layer {layer!r} does not exist"
+        )
+
+    # 512px seems to give better resolution. not sure what's going on here yet.
+    gbox = GridSpec.web_tiles(z, npix=512).tile_geobox(XY(x, y))  # cache?
+
+    # TODO move cache lookup to server thread to avoid IPC overhead when cached
+    result = func(gbox)
+
+    return to_png(result, range=(vmin, vmax), cmap=cmap)

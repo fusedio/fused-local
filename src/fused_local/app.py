@@ -1,15 +1,12 @@
 from pathlib import Path
 
 import pydeck as pdk
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
-from odc.geo import XY
-from odc.geo.gridspec import GridSpec
 
-from fused_local import example
 from fused_local.lib import TileFunc
-from fused_local.render import to_png
+from fused_local.render import render_tile
 
 app = FastAPI()
 
@@ -35,14 +32,15 @@ async def root():
         debounce_time=100,  # ms
     )
 
-    print(list(TileFunc._instances))
+    names = tile_layers()
+    print(names)
     layers = [
         pdk.Layer(
             type="MyTileLayer",  # see hack above
             data=f"/tiles/{name}" + "/{z}/{x}/{y}.png?vmin=0&vmax=8000",
             min_zoom=5,
         )
-        for name in TileFunc._instances.keys()
+        for name in names
     ]
 
     # Render
@@ -62,26 +60,14 @@ def tile(
     vmax: float,
     cmap: str | None = None,
 ):
-    try:
-        func = TileFunc._instances[layer]
-    except KeyError:
-        raise HTTPException(
-            status_code=404, detail=f"Tile layer {layer!r} does not exist"
-        )
-
-    # 512px seems to give better resolution. not sure what's going on here yet.
-    gbox = GridSpec.web_tiles(z, npix=512).tile_geobox(XY(x, y))  # cache?
-
-    result = func(gbox)
-
-    png = to_png(result, range=(vmin, vmax), cmap=cmap)
-
+    # NOTE: with sync `def`, fastapi automatically runs in a threadpool
+    png = render_tile(layer, z, x, y, vmin, vmax, cmap)
     return Response(png, media_type="image/png")
 
 
 @app.get("/tiles")
-def tile_layers():
-    return list(TileFunc._instances.keys())
+def tile_layers() -> list[str]:
+    return list(TileFunc._instances)
 
 
 # put at end so that it doesn't shadow other routes

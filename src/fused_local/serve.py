@@ -1,11 +1,14 @@
 import datetime
+import sys
 from os import PathLike
 from pathlib import Path
-from hypercorn.config import Config
-from hypercorn.asyncio import serve
-import asyncio
-from fused_local.app import app
 
+import trio
+from hypercorn.trio import serve
+from hypercorn.config import Config
+
+from fused_local.app import app
+from fused_local.user_code import watch_reload_user_code
 
 # TODO: we can't easily serve HTTP/2 over localhost, because it requires HTTPS.
 # The browser won't trust our self-signed certificates, which isn't great UX.
@@ -15,11 +18,10 @@ from fused_local.app import app
 def generate_certs(key_file: PathLike, cert_file: PathLike):
     # copied from https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate
     # modified to remove passphrase and extend expiry
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.x509.oid import NameOID
-    from cryptography.hazmat.primitives import hashes
 
     # Generate our key
     key = rsa.generate_private_key(
@@ -77,6 +79,21 @@ def generate_certs(key_file: PathLike, cert_file: PathLike):
 key_file = Path.cwd() / "key.pem"
 cert_file = Path.cwd() / "cert.pem"
 
+
+async def main(config: Config, code_path: Path):
+    async def wait_n_kill(cs: trio.CancelScope):
+        await trio.sleep(3)
+        print("raising")
+        cs.cancel()
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(serve, app, config, name="Hypercorn")  # type: ignore (unclear why)
+        # nursery.start_soon(wait_n_kill, nursery.cancel_scope)
+
+        nursery.start_soon(watch_reload_user_code, code_path, name="Code watcher")
+    print("out of tg")
+
+
 if __name__ == "__main__":
     if not key_file.exists() or not cert_file.exists():
         print(f"Generating self-signed certificate to {key_file} and {cert_file}")
@@ -89,4 +106,8 @@ if __name__ == "__main__":
     config.keyfile = str(key_file)
     config.certfile = str(cert_file)
 
-    asyncio.run(serve(app, config))  # type: ignore (unclear why)
+    code_path = Path(sys.argv[1]).absolute()
+
+    # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
+    # TODO suppress keyboardinterrupt traceback
+    trio.run(main, config, code_path)

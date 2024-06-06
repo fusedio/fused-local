@@ -5,6 +5,7 @@ import xarray as xr
 import odc.stac
 from odc.geo.geobox import GeoBox
 
+print("bar")
 
 @fused_local.tile
 def s2_scene_june(gbox: GeoBox) -> xr.Dataset:
