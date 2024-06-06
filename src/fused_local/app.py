@@ -71,7 +71,6 @@ def tile(
     gbox = GridSpec.web_tiles(z, npix=512).tile_geobox(XY(x, y))  # cache?
 
     result = func(gbox)
-    print(result)
 
     png = to_png(result, range=(vmin, vmax), cmap=cmap)
 

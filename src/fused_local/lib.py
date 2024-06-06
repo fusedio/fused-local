@@ -2,9 +2,12 @@ from functools import singledispatchmethod
 from typing import Callable, Concatenate, Generic, ParamSpec, Self, TypeVar
 from weakref import WeakValueDictionary
 
+from dask.base import tokenize
 import geopandas
 import xarray
 from odc.geo.geobox import GeoBox
+
+from fused_local.cache import cache
 
 VectorMappable = geopandas.GeoDataFrame | geopandas.GeoSeries
 RasterMappable = xarray.DataArray | xarray.Dataset
@@ -31,12 +34,18 @@ class TileFunc(Generic[P, TileR]):
             raise ValueError(f"{self.name} already exists! {prev=}, {self=}")
         super().__init__()
 
+    @cache
     def __call__(self, gbox: GeoBox, *args: P.args, **kwargs: P.kwargs) -> TileR:
         # TODO caching
+        # TODO don't cache empty results??
         return self.func(gbox, *args, **kwargs)
 
     def __repr__(self) -> str:
         return f"TileFunc({self.func!r})"
+
+    def __dask_tokenize__(self) -> str:
+        # TODO remove dask tokenize dependency
+        return tokenize(self.func)
 
     @singledispatchmethod
     def tile_over(self, aoi, *args: P.args, **kwargs: P.kwargs) -> TileR:

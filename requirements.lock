@@ -107,6 +107,7 @@ cycler==0.12.1
     # via matplotlib
 dask==2024.5.2
     # via distributed
+    # via fused-local
     # via odc-stac
     # via stackstac
 debugpy==1.8.1
@@ -115,6 +116,8 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
+diskcache==5.6.3
+    # via fused-local
 distributed==2024.5.2
     # via stackstac
 dnspython==2.6.1
