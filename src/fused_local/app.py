@@ -1,50 +1,83 @@
-import io
-
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from fastapi.responses import StreamingResponse
-from PIL import Image
-
 import pydeck as pdk
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse, Response
+from odc.geo import XY
+from odc.geo.gridspec import GridSpec
+
+from fused_local.lib import TileFunc
+from fused_local.render import to_png
+
+from fused_local import example
 
 app = FastAPI()
 
-
-def generate_tile(z: int, x: int, y: int) -> Image.Image:
-    # This is a placeholder function. Replace this with your actual tile generation logic.
-    img = Image.new("RGB", (256, 256), color=(73, 109, 137))
-    return img
+# HACK
+# https://github.com/agressin/pydeck_myTileLayer
+# won't need for long though
+pdk.settings.custom_libraries = [
+    {
+        "libraryName": "MyTileLayerLibrary",
+        "resourceUri": "https://cdn.jsdelivr.net/gh/agressin/pydeck_myTileLayer@master/dist/bundle.js",
+    }
+]
 
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    # Set the viewport location
     view_state = pdk.ViewState(
-        longitude=-1.415,
-        latitude=52.2323,
-        zoom=6,
+        longitude=-105.78,
+        latitude=35.79,
+        zoom=9,
         min_zoom=5,
         max_zoom=15,
-        pitch=40.5,
-        bearing=-27.36,
+        debounce_time=100,  # ms
     )
 
+    print(list(TileFunc._instances))
+    layers = [
+        pdk.Layer(
+            type="MyTileLayer",  # see hack above
+            data=f"/tiles/{name}" + "/{z}/{x}/{y}.png?vmin=0&vmax=8000",
+            min_zoom=5,
+        )
+        for name in TileFunc._instances.keys()
+    ]
+
     # Render
-    r = pdk.Deck(layers=[], initial_view_state=view_state)
+    r = pdk.Deck(layers=layers, initial_view_state=view_state)
     html = r.to_html(notebook_display=False, as_string=True)
 
     return html
 
 
-@app.get("/tiles/{z}/{x}/{y}.png")
-async def tile(z: int, x: int, y: int):
-    # Generate the tile
-    img = generate_tile(z, x, y)
+@app.get("/tiles/{layer}/{z}/{x}/{y}.png")
+def tile(
+    layer: str,
+    z: int,
+    x: int,
+    y: int,
+    vmin: float,
+    vmax: float,
+    cmap: str | None = None,
+):
+    try:
+        func = TileFunc._instances[layer]
+    except KeyError:
+        raise HTTPException(
+            status_code=404, detail=f"Tile layer {layer!r} does not exist"
+        )
 
-    # Save the image to a BytesIO object
-    img_io = io.BytesIO()
-    img.save(img_io, "PNG")
-    img_io.seek(0)
+    # 512px seems to give better resolution. not sure what's going on here yet.
+    gbox = GridSpec.web_tiles(z, npix=512).tile_geobox(XY(x, y))  # cache?
 
-    # Return the image as a streaming response
-    return StreamingResponse(img_io, media_type="image/png")
+    result = func(gbox)
+    print(result)
+
+    png = to_png(result, range=(vmin, vmax), cmap=cmap)
+
+    return Response(png, media_type="image/png")
+
+
+@app.get("/tiles")
+def tile_layers():
+    return list(TileFunc._instances.keys())

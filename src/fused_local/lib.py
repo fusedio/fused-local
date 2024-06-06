@@ -1,5 +1,6 @@
 from functools import singledispatchmethod
-from typing import Callable, Concatenate, Generic, ParamSpec, TypeVar
+from typing import Callable, Concatenate, Generic, ParamSpec, Self, TypeVar
+from weakref import WeakValueDictionary
 
 import geopandas
 import xarray
@@ -17,7 +18,25 @@ TileR = TypeVar("TileR", bound=MappableTypes)
 class TileFunc(Generic[P, TileR]):
     "A wrapped function that runs on a per-tile basis."
 
-    def __call__(self, gbox: GeoBox, *args: P.args, **kwargs: P.kwargs) -> TileR: ...
+    _instances: WeakValueDictionary[str, Self] = WeakValueDictionary()
+
+    func: Callable[Concatenate[GeoBox, P], TileR]
+    name: str
+
+    def __init__(self, func: Callable[Concatenate[GeoBox, P], TileR]) -> None:
+        self.func = func
+        self.name = func.__name__
+        if (prev := self._instances.setdefault(self.name, self)) is not self:
+            # actually this may be fine
+            raise ValueError(f"{self.name} already exists! {prev=}, {self=}")
+        super().__init__()
+
+    def __call__(self, gbox: GeoBox, *args: P.args, **kwargs: P.kwargs) -> TileR:
+        # TODO caching
+        return self.func(gbox, *args, **kwargs)
+
+    def __repr__(self) -> str:
+        return f"TileFunc({self.func!r})"
 
     @singledispatchmethod
     def tile_over(self, aoi, *args: P.args, **kwargs: P.kwargs) -> TileR:
@@ -107,7 +126,7 @@ def tile(
 
     Results are automatically cached.
     """
-    ...
+    return TileFunc(func)
 
 
 def region(
