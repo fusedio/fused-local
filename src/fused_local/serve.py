@@ -95,19 +95,20 @@ async def main(config: Config, code_path: Path):
 
 
 if __name__ == "__main__":
-    if not key_file.exists() or not cert_file.exists():
-        print(f"Generating self-signed certificate to {key_file} and {cert_file}")
-        generate_certs(key_file, cert_file)
+    # if not key_file.exists() or not cert_file.exists():
+    #     print(f"Generating self-signed certificate to {key_file} and {cert_file}")
+    #     generate_certs(key_file, cert_file)
 
     config = Config()
-    config.bind = ["localhost:8000"]
-    config.accesslog = "-"
-    config.errorlog = "-"
+    # config.bind = ["127.0.0.1:8000"]
+    # config.accesslog = "-"
+    # config.errorlog = "-"
     config.keyfile = str(key_file)
     config.certfile = str(cert_file)
 
-    code_path = Path(sys.argv[1]).absolute()
+    # code_path = Path(sys.argv[1]).absolute()
 
     # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
     # TODO suppress keyboardinterrupt traceback
-    trio.run(main, config, code_path)
+    # trio.run(main, config, code_path)
+    trio.run(serve, app, config)

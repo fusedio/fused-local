@@ -3,6 +3,7 @@ import importlib.util
 import sys
 from types import ModuleType
 
+import trio
 from watchfiles import awatch
 import fused_local.lib
 
@@ -35,6 +36,9 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
+_reload_send, reloaded = trio.open_memory_channel(0)
+
+
 async def watch_reload_user_code(code_path: Path):
     # TODO what about when you have multiple files with imports?
     # when your file imports another?
@@ -47,6 +51,7 @@ async def watch_reload_user_code(code_path: Path):
         fused_local.lib.TileFunc._instances.clear()
         print(f"reloading {code_path}")
         import_user_code(code_path)
+        await _reload_send.send(None)
 
 
 if __name__ == "__main__":

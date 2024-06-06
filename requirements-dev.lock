@@ -392,6 +392,7 @@ ptyprocess==0.7.0
     # via terminado
 pure-eval==0.2.2
     # via stack-data
+py-spy==0.3.14
 pycparser==2.22
     # via cffi
 pydantic==2.7.2
@@ -622,6 +623,7 @@ webencodings==0.5.1
 websocket-client==1.8.0
     # via jupyter-server
 websockets==12.0
+    # via fused-local
     # via uvicorn
 werkzeug==3.0.3
     # via server-thread
