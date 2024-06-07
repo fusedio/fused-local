@@ -103,8 +103,10 @@ if __name__ == "__main__":
     # config.bind = ["127.0.0.1:8000"]
     # config.accesslog = "-"
     # config.errorlog = "-"
-    config.keyfile = str(key_file)
-    config.certfile = str(cert_file)
+    # FIXME re-enable HTTPS so we can use HTTP/2
+    # websockets seem to break in hypercorn with http2, though.
+    # config.keyfile = str(key_file)
+    # config.certfile = str(cert_file)
 
     # code_path = Path(sys.argv[1]).absolute()
 

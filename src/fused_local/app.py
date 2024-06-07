@@ -88,7 +88,7 @@ async def hmr_liveness(websocket: WebSocket):
 HMR_SCRIPT = """
 <script>
 (() => {
-    const socketUrl = "wss://127.0.0.1:8000/hmr";
+    const socketUrl = "ws://127.0.0.1:8000/hmr";
     // https://stackoverflow.com/a/68750487
     // const connect = () => { return new WebSocket(socketUrl, null, null, null, {rejectUnauthorized: false}) };
     const connect = () => { return new WebSocket(socketUrl) };
