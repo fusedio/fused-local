@@ -36,23 +36,34 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
-_reload_send, reloaded = trio.open_memory_channel(100)
+_reloaded_event = trio.Event()
+
+
+async def next_code_reload() -> None:
+    # Importing `_reloaded_event` would be a bad idea since it gets swapped out,
+    # so wrap in a function
+    await _reloaded_event.wait()
 
 
 async def watch_reload_user_code(code_path: Path):
     # TODO what about when you have multiple files with imports?
     # when your file imports another?
     # basically we're not handling multiple files at all yet
+    global _reloaded_event
     import_user_code(code_path)
 
     async for _ in awatch(code_path):
         # TODO: thread safety around `TileFunc._instances`
         # because tile render functions are run in a threadpool, there are race conditions here
         fused_local.lib.TileFunc._instances.clear()
+
         print(f"reloading {code_path}")
         import_user_code(code_path)
-        await _reload_send.send(None)
+
+        _reloaded_event.set()
         print("send reload message")
+        # NOTE: trio events don't have a `clear` method, so we just make a new one
+        _reloaded_event = trio.Event()
 
 
 if __name__ == "__main__":

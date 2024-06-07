@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from fused_local.lib import TileFunc
 from fused_local.render import render_tile
-from fused_local.user_code import reloaded
+from fused_local.user_code import next_code_reload
 
 app = FastAPI()
 
@@ -71,26 +71,19 @@ def tile(
 def tile_layers() -> list[str]:
     return list(TileFunc._instances)
 
-# ok wtf is going on
-# every _other_ reload works
-# something is fucked with the channel i think
-# and the browser wants to open 2 websockets ?!
-# so basically when we do a reload, we end up closing just 1 of the sockets
-# which the browser wasn't actually listening to anymore?!
-# the primary question is why the f doesn't `r.receive()` happen in both coroutines
+
 @app.websocket("/hmr")
 async def hmr_liveness(websocket: WebSocket):
-    with reloaded.clone() as r:
-        # https://paregis.me/posts/fastapi-frontend-development/
-        try:
-            await websocket.accept()
-            print(f"accpeted {websocket}")
-            await r.receive()  # todo how to clone
-            print(f"closing websocket {websocket}")
-            await websocket.close()
-            print(f"closed {websocket}")
-        except WebSocketDisconnect:
-            pass
+    # https://paregis.me/posts/fastapi-frontend-development/
+    try:
+        await websocket.accept()
+        print(f"accpeted {websocket}")
+        await next_code_reload()
+        print(f"closing websocket {websocket}")
+        await websocket.close()
+        print(f"closed {websocket}")
+    except WebSocketDisconnect:
+        pass
 
 
 # https://paregis.me/posts/fastapi-frontend-development/
