@@ -100,7 +100,7 @@ if __name__ == "__main__":
     #     generate_certs(key_file, cert_file)
 
     config = Config()
-    # config.bind = ["127.0.0.1:8000"]
+    config.bind = ["127.0.0.1:8000"]
     # config.accesslog = "-"
     # config.errorlog = "-"
     # FIXME re-enable HTTPS so we can use HTTP/2
@@ -108,9 +108,9 @@ if __name__ == "__main__":
     # config.keyfile = str(key_file)
     # config.certfile = str(cert_file)
 
-    # code_path = Path(sys.argv[1]).absolute()
+    code_path = Path(sys.argv[1]).absolute()
 
     # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
     # TODO suppress keyboardinterrupt traceback
-    # trio.run(main, config, code_path)
-    trio.run(serve, app, config)
+    trio.run(main, config, code_path)
+    # trio.run(serve, app, config)

@@ -39,7 +39,7 @@ def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P
         lock_key = f"{key}-lock"
         try:
             r = _cache[key]  # type: ignore
-            print(f"cache hit {func} {args}")
+            # print(f"cache hit {func} {args}")
             return r
         except KeyError:
             pass
@@ -48,12 +48,12 @@ def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P
             # may have been added while waiting for lock
             try:
                 r = _cache[key]  # type: ignore
-                print(f"cache hit 2 {func} {args}")
+                # print(f"cache hit 2 {func} {args}")
                 return r
             except KeyError:
                 pass
 
-            print(f"actually computing {func} {args}")
+            # print(f"actually computing {func} {args}")
             result = func(*args, **kwargs)
             _cache.set(key, result, expire=expire)
             return result

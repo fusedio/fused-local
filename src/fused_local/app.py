@@ -71,17 +71,26 @@ def tile(
 def tile_layers() -> list[str]:
     return list(TileFunc._instances)
 
-
+# ok wtf is going on
+# every _other_ reload works
+# something is fucked with the channel i think
+# and the browser wants to open 2 websockets ?!
+# so basically when we do a reload, we end up closing just 1 of the sockets
+# which the browser wasn't actually listening to anymore?!
+# the primary question is why the f doesn't `r.receive()` happen in both coroutines
 @app.websocket("/hmr")
 async def hmr_liveness(websocket: WebSocket):
-    # https://paregis.me/posts/fastapi-frontend-development/
-    try:
-        await websocket.accept()
-        # await reloaded.receive()  # todo how to clone
-        print("hmr connected")
-        await websocket.close()
-    except WebSocketDisconnect:
-        pass
+    with reloaded.clone() as r:
+        # https://paregis.me/posts/fastapi-frontend-development/
+        try:
+            await websocket.accept()
+            print(f"accpeted {websocket}")
+            await r.receive()  # todo how to clone
+            print(f"closing websocket {websocket}")
+            await websocket.close()
+            print(f"closed {websocket}")
+        except WebSocketDisconnect:
+            pass
 
 
 # https://paregis.me/posts/fastapi-frontend-development/
@@ -97,10 +106,11 @@ HMR_SCRIPT = """
     * Hot Module Reload
     */
     ws.addEventListener('close',() => {
-        const interAttemptTimeoutMilliseconds = 100;
+        const interAttemptTimeoutMilliseconds = 500;
         const maxAttempts = 5;
         let attempts = 0;
         const reloadIfCanConnect = () => {
+            console.log('[WS:info]', 'Attempting to reconnect to dev server...');
             attempts++ ;
             if(attempts > maxAttempts){
                 console.error('[WS:error]', 'HMR could not reconnect to dev server.');

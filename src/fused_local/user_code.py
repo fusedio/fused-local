@@ -36,7 +36,7 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
-_reload_send, reloaded = trio.open_memory_channel(0)
+_reload_send, reloaded = trio.open_memory_channel(100)
 
 
 async def watch_reload_user_code(code_path: Path):
@@ -52,6 +52,7 @@ async def watch_reload_user_code(code_path: Path):
         print(f"reloading {code_path}")
         import_user_code(code_path)
         await _reload_send.send(None)
+        print("send reload message")
 
 
 if __name__ == "__main__":
