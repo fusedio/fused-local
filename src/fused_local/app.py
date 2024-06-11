@@ -9,7 +9,11 @@ from fastapi.staticfiles import StaticFiles
 
 from fused_local.lib import TileFunc
 from fused_local.render import render_tile
-from fused_local.user_code import next_code_reload, watch_reload_user_code
+from fused_local.user_code import (
+    USER_CODE_PATH,
+    next_code_reload,
+    watch_reload_user_code,
+)
 
 
 # HACK
@@ -26,15 +30,11 @@ pdk.settings.custom_libraries = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # TODO allow passing in file as CLI argument.
-    # uvcorn/gunicorn won't accept extraneous arguments, so not sure how to do this yet.
-    # code_path = Path(sys.argv[-1]).absolute()
-
-    # Just hardcode for now
-    code_path = Path.cwd() / "example.py"
+    # uvcorn/gunicorn won't accept extraneous arguments, so easier to hardcode for prototype.
 
     async with anyio.create_task_group() as tg:
-        print(f"watching {code_path}")
-        tg.start_soon(watch_reload_user_code, code_path, name="Code watcher")
+        print(f"watching {USER_CODE_PATH}")
+        tg.start_soon(watch_reload_user_code, USER_CODE_PATH, name="Code watcher")
         yield
         print("cancelling file watch")
         tg.cancel_scope.cancel()
