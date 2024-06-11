@@ -9,6 +9,7 @@ wheels/
 # venv
 .venv
 node_modules
+.vagrant
 
 # JS output
 **/frontend/*.js*
