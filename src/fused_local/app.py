@@ -1,5 +1,7 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
+import anyio
 import pydeck as pdk
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, Response
@@ -7,9 +9,8 @@ from fastapi.staticfiles import StaticFiles
 
 from fused_local.lib import TileFunc
 from fused_local.render import render_tile
-from fused_local.user_code import next_code_reload
+from fused_local.user_code import next_code_reload, watch_reload_user_code
 
-app = FastAPI()
 
 # HACK
 # https://github.com/agressin/pydeck_myTileLayer
@@ -20,6 +21,26 @@ pdk.settings.custom_libraries = [
         "resourceUri": "https://cdn.jsdelivr.net/gh/agressin/pydeck_myTileLayer@master/dist/bundle.js",
     }
 ]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # TODO allow passing in file as CLI argument.
+    # uvcorn/gunicorn won't accept extraneous arguments, so not sure how to do this yet.
+    # code_path = Path(sys.argv[-1]).absolute()
+
+    # Just hardcode for now
+    code_path = Path.cwd() / "example.py"
+
+    async with anyio.create_task_group() as tg:
+        print(f"watching {code_path}")
+        tg.start_soon(watch_reload_user_code, code_path, name="Code watcher")
+        yield
+        print("cancelling file watch")
+        tg.cancel_scope.cancel()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/map", response_class=HTMLResponse)

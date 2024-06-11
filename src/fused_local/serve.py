@@ -8,7 +8,6 @@ from hypercorn.trio import serve
 from hypercorn.config import Config
 
 from fused_local.app import app
-from fused_local.user_code import watch_reload_user_code
 
 # TODO: we can't easily serve HTTP/2 over localhost, because it requires HTTPS.
 # The browser won't trust our self-signed certificates, which isn't great UX.
@@ -80,20 +79,6 @@ key_file = Path.cwd() / "key.pem"
 cert_file = Path.cwd() / "cert.pem"
 
 
-async def main(config: Config, code_path: Path):
-    async def wait_n_kill(cs: trio.CancelScope):
-        await trio.sleep(3)
-        print("raising")
-        cs.cancel()
-
-    async with trio.open_nursery() as nursery:
-        nursery.start_soon(serve, app, config, name="Hypercorn")  # type: ignore (unclear why)
-        # nursery.start_soon(wait_n_kill, nursery.cancel_scope)
-
-        nursery.start_soon(watch_reload_user_code, code_path, name="Code watcher")
-    print("out of tg")
-
-
 if __name__ == "__main__":
     # if not key_file.exists() or not cert_file.exists():
     #     print(f"Generating self-signed certificate to {key_file} and {cert_file}")
@@ -111,6 +96,4 @@ if __name__ == "__main__":
     code_path = Path(sys.argv[1]).absolute()
 
     # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
-    # TODO suppress keyboardinterrupt traceback
-    trio.run(main, config, code_path)
-    # trio.run(serve, app, config)
+    trio.run(serve, app, config)

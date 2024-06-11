@@ -3,7 +3,7 @@ import importlib.util
 import sys
 from types import ModuleType
 
-import trio
+import anyio
 from watchfiles import awatch
 import fused_local.lib
 
@@ -36,7 +36,7 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
-_reloaded_event = trio.Event()
+_reloaded_event = anyio.Event()
 
 
 async def next_code_reload() -> None:
@@ -63,7 +63,7 @@ async def watch_reload_user_code(code_path: Path):
         _reloaded_event.set()
         print("send reload message")
         # NOTE: trio events don't have a `clear` method, so we just make a new one
-        _reloaded_event = trio.Event()
+        _reloaded_event = anyio.Event()
 
 
 if __name__ == "__main__":
