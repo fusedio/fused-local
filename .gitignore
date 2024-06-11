@@ -12,7 +12,6 @@ node_modules
 .vagrant
 
 # JS output
-**/frontend/*.js*
 dist
 
 # self-signed certs

@@ -12,6 +12,7 @@ from fused_local.render import render_tile
 from fused_local.user_code import (
     USER_CODE_PATH,
     next_code_reload,
+    watch_for_live_reload,
     watch_reload_user_code,
 )
 
@@ -26,6 +27,8 @@ pdk.settings.custom_libraries = [
     }
 ]
 
+FRONTEND_DIR = Path(__file__).parent / "frontend"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,7 +37,9 @@ async def lifespan(app: FastAPI):
 
     async with anyio.create_task_group() as tg:
         print(f"watching {USER_CODE_PATH}")
+        print(f"watching {FRONTEND_DIR}")
         tg.start_soon(watch_reload_user_code, USER_CODE_PATH, name="Code watcher")
+        tg.start_soon(watch_for_live_reload, FRONTEND_DIR, name="Frontend watcher")
         yield
         print("cancelling file watch")
         tg.cancel_scope.cancel()
@@ -98,7 +103,7 @@ async def hmr_liveness(websocket: WebSocket):
     # https://paregis.me/posts/fastapi-frontend-development/
     try:
         await websocket.accept()
-        print(f"accpeted {websocket}")
+        print(f"accepted {websocket}")
         await next_code_reload()
         print(f"closing websocket {websocket}")
         await websocket.close()
@@ -148,6 +153,6 @@ HMR_SCRIPT = """
 # https://stackoverflow.com/a/73916745
 app.mount(
     "/",
-    StaticFiles(directory=Path(__file__).parent / "frontend", html=True),
+    StaticFiles(directory=FRONTEND_DIR, html=True),
     name="static",
 )

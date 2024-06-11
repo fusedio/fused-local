@@ -70,5 +70,13 @@ async def watch_reload_user_code(code_path: Path):
         _reloaded_event = anyio.Event()
 
 
+async def watch_for_live_reload(*paths: Path):
+    global _reloaded_event
+    async for _ in awatch(*paths):
+        print("triggering live reload")
+        _reloaded_event.set()
+        _reloaded_event = anyio.Event()
+
+
 if __name__ == "__main__":
     module = import_user_code(Path("example.py"))

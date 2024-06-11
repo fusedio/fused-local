@@ -1,16 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import HelloWorld from './hello.tsx';
+import App from './map';
 
-const App = () => {
+const Index = () => {
     return (
-        <body>
-            <main>
-                <section>
-                    <HelloWorld />
-                </section>
-            </main>
-        </body>
+        <App />
     );
 }
 
-createRoot(document.getElementById('app') as HTMLElement).render(<App />);
+createRoot(document.getElementById('app') as HTMLElement).render(<Index />);

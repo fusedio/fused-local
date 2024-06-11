@@ -23,10 +23,11 @@
         * Hot Module Reload
         */
         ws.addEventListener('close', () => {
-            const interAttemptTimeoutMilliseconds = 1000;
-            const maxAttempts = 1;
+            const interAttemptTimeoutMilliseconds = 500;
+            const maxAttempts = 5;
             let attempts = 0;
             const reloadIfCanConnect = () => {
+                console.log('[WS:info]', 'Attempting to reconnect to dev server...');
                 attempts++;
                 if (attempts > maxAttempts) {
                     console.error('[WS:error]', 'HMR could not reconnect to dev server.');
