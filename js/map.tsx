@@ -62,21 +62,24 @@ function App() {
         <Map
             mapStyle="https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
         />
-        <div
+        <section><aside
             style={{
                 position: "absolute",
-                top: 10,
-                left: 10,
+                top: 0,
+                left: 0,
                 backgroundColor: "white",
-                padding: 10,
-                borderRadius: 5,
-                zIndex: 1,
+                padding: "0.75rem",
+                minWidth: "10rem",
+                width: "initial",
+                // padding: 10,
+                // borderRadius: 5,
+                // zIndex: 1,
             }}
         >
             {isLoading && "Loading..."}
             {error && "Error: " + error.message}
             {data && <Layers layerNames={data} />}
-        </div>
+        </aside></section>
     </DeckGL>
 }
 
@@ -85,10 +88,18 @@ interface LayersProps {
 }
 
 function Layers({ layerNames }: LayersProps) {
-    return
-    layerNames.map((name) => (
-        <div key={name}>{name}</div>
-    ))
+    return <>
+        <h3
+            style={{
+                margin: "0.3rem 0.1rem"
+            }}
+        >
+            Layers
+        </h3>
+        {layerNames.map((name) => (
+            <samp key={name}>{name}</samp>
+        ))}
+    </>
 }
 
 export default App;
