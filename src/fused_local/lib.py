@@ -25,10 +25,12 @@ class TileFunc(Generic[P, TileR]):
 
     func: Callable[Concatenate[GeoBox, P], TileR]
     name: str
+    hash: str
 
     def __init__(self, func: Callable[Concatenate[GeoBox, P], TileR]) -> None:
         self.func = func
         self.name = func.__name__
+        self.hash = tokenize(func)  # TODO remove dask tokenize dependency
         if (prev := self._instances.setdefault(self.name, self)) is not self:
             # actually this may be fine
             raise ValueError(f"{self.name} already exists! {prev=}, {self=}")
@@ -44,8 +46,7 @@ class TileFunc(Generic[P, TileR]):
         return f"TileFunc({self.func!r})"
 
     def __dask_tokenize__(self) -> str:
-        # TODO remove dask tokenize dependency
-        return tokenize(self.func)
+        return self.hash
 
     @singledispatchmethod
     def tile_over(self, aoi, *args: P.args, **kwargs: P.kwargs) -> TileR:

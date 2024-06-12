@@ -49,6 +49,9 @@ dev-dependencies = [
     "py-spy>=0.3.14",
 ]
 
+[tool.rye.scripts]
+build_ts = "python src/fused_local/models.py js/generated/models.ts"
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
