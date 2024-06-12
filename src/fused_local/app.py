@@ -1,18 +1,22 @@
 from contextlib import asynccontextmanager
+import json
 from pathlib import Path
+from typing import AsyncIterator
 
 import anyio
 import pydeck as pdk
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+from sse_starlette.sse import EventSourceResponse
 
 from fused_local.lib import TileFunc
 from fused_local.render import render_tile
 from fused_local.user_code import (
     USER_CODE_PATH,
     next_code_reload,
-    watch_for_live_reload,
+    next_frontend_reload,
+    watch_for_frontend_reload,
     watch_reload_user_code,
 )
 
@@ -39,7 +43,7 @@ async def lifespan(app: FastAPI):
         print(f"watching {USER_CODE_PATH}")
         print(f"watching {FRONTEND_DIR}")
         tg.start_soon(watch_reload_user_code, USER_CODE_PATH, name="Code watcher")
-        tg.start_soon(watch_for_live_reload, FRONTEND_DIR, name="Frontend watcher")
+        tg.start_soon(watch_for_frontend_reload, FRONTEND_DIR, name="Frontend watcher")
         yield
         print("cancelling file watch")
         tg.cancel_scope.cancel()
@@ -98,13 +102,25 @@ def tile_layers() -> list[str]:
     return list(TileFunc._instances)
 
 
+async def _state() -> AsyncIterator[str]:
+    while True:
+        print("sending sse reload")
+        yield json.dumps(tile_layers())
+        await next_code_reload()
+
+
+@app.get("/state")
+async def state():
+    return EventSourceResponse(_state())
+
+
 @app.websocket("/hmr")
 async def hmr_liveness(websocket: WebSocket):
     # https://paregis.me/posts/fastapi-frontend-development/
     try:
         await websocket.accept()
         print(f"accepted {websocket}")
-        await next_code_reload()
+        await next_frontend_reload()
         print(f"closing websocket {websocket}")
         await websocket.close()
         print(f"closed {websocket}")

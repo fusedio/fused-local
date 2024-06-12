@@ -40,20 +40,24 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
-_reloaded_event = anyio.Event()
+_code_reload_event = anyio.Event()
+_frontend_reload_event = anyio.Event()
 
 
 async def next_code_reload() -> None:
     # Importing `_reloaded_event` would be a bad idea since it gets swapped out,
     # so wrap in a function
-    await _reloaded_event.wait()
+    await _code_reload_event.wait()
+
+async def next_frontend_reload() -> None:
+    await _frontend_reload_event.wait()
 
 
 async def watch_reload_user_code(code_path: Path):
     # TODO what about when you have multiple files with imports?
     # when your file imports another?
     # basically we're not handling multiple files at all yet
-    global _reloaded_event
+    global _code_reload_event
     import_user_code(code_path)
 
     async for _ in awatch(code_path):
@@ -64,18 +68,18 @@ async def watch_reload_user_code(code_path: Path):
         print(f"reloading {code_path}")
         import_user_code(code_path)
 
-        _reloaded_event.set()
+        _code_reload_event.set()
         print("send reload message")
         # NOTE: trio events don't have a `clear` method, so we just make a new one
-        _reloaded_event = anyio.Event()
+        _code_reload_event = anyio.Event()
 
 
-async def watch_for_live_reload(*paths: Path):
-    global _reloaded_event
+async def watch_for_frontend_reload(*paths: Path):
+    global _frontend_reload_event
     async for _ in awatch(*paths):
         print("triggering live reload")
-        _reloaded_event.set()
-        _reloaded_event = anyio.Event()
+        _frontend_reload_event.set()
+        _frontend_reload_event = anyio.Event()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import useSWR from "swr";
@@ -7,19 +7,30 @@ import { TileLayer } from '@deck.gl/geo-layers';
 import type { TileLayerPickingInfo } from '@deck.gl/geo-layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// const fetcher = (...args) => fetch(...args).then(res => res.json())
-async function fetcher<JSON = any>(
-    input: RequestInfo,
-    init?: RequestInit
-): Promise<JSON> {
-    const res = await fetch(input, init);
-    return res.json();
-}
-
 const tileUrl = (name: string, vmin: number = 0, vmax: number = 8000) => `http://127.0.0.1:8000/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}`;
 
 function App() {
-    const { data, error, isLoading } = useSWR<string[]>("/tiles", fetcher)
+    const [data, setData] = useState<string[]>([]);
+    const [isLoading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string|null>(null);
+
+    useEffect(() => {
+        const eventSource = new EventSource("http://127.0.0.1:8000/state");
+
+        eventSource.onmessage = (event) => {
+            setLoading(false);
+            const state = JSON.parse(event.data);
+            console.log(state);
+            setData(state);
+        };
+
+        eventSource.onerror = (event) => {
+            console.log("EventSource failed:", event);
+            setError("EventSource failed: " + event);
+        };
+
+        return () => eventSource.close();
+    }, []);
 
     const layers = data?.map((name) => {
         return new TileLayer({
@@ -77,7 +88,7 @@ function App() {
             }}
         >
             {isLoading && "Loading..."}
-            {error && "Error: " + error.message}
+            {error && "Error: " + error}
             {data && <Layers layerNames={data} />}
         </aside></section>
     </DeckGL>
@@ -97,7 +108,7 @@ function Layers({ layerNames }: LayersProps) {
             Layers
         </h3>
         {layerNames.map((name) => (
-            <samp key={name}>{name}</samp>
+            <div><samp key={name}>{name}</samp></div>
         ))}
     </>
 }
