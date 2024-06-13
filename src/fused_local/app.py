@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import json
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -11,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
 from fused_local.lib import TileFunc
+from fused_local.models import MapState, TileLayer
 from fused_local.render import render_tile
 from fused_local.user_code import (
     USER_CODE_PATH,
@@ -19,7 +19,6 @@ from fused_local.user_code import (
     watch_for_frontend_reload,
     watch_reload_user_code,
 )
-
 
 # HACK
 # https://github.com/agressin/pydeck_myTileLayer
@@ -63,7 +62,7 @@ async def root():
         debounce_time=100,  # ms
     )
 
-    names = tile_layers()
+    names = list(TileFunc._instances)
     print(names)
     layers = [
         pdk.Layer(
@@ -91,27 +90,45 @@ def tile(
     vmin: float,
     vmax: float,
     cmap: str | None = None,
+    hash: str | None = None,
+    # TODO should `hash` be part of the URL path? It's basically a 'version', and in the
+    # future, maybe versions would be explicit. For now, it's used just to make deck.gl
+    # reload a tile when the user code changes, by changing the URL.
 ):
     # NOTE: with sync `def`, fastapi automatically runs in a threadpool
-    png = render_tile(layer, z, x, y, vmin, vmax, cmap)
+    png = render_tile(layer, z, x, y, vmin, vmax, cmap, hash)
     return Response(png, media_type="image/png")
 
+def _map_state() -> MapState:
+    return MapState(
+        layers=[
+            TileLayer(
+                name=t.name,
+                hash=t.hash,
+                # TODO don't hardcode these
+                min_zoom=6,
+                max_zoom=16,
+                vmin=0,
+                vmax=8000,
+            )
+            for t in TileFunc._instances.values()
+        ],
+        # TODO allow configuring
+        longitude=-105.78,
+        latitude=35.79,
+        zoom=9,
+    )
 
-@app.get("/tiles")
-def tile_layers() -> list[str]:
-    return list(TileFunc._instances)
 
+@app.get("/map_state")
+async def map_state():
+    async def _map_state_generator() -> AsyncIterator[str]:
+        while True:
+            print("sending sse reload")
+            yield _map_state().model_dump_json()
+            await next_code_reload()
 
-async def _state() -> AsyncIterator[str]:
-    while True:
-        print("sending sse reload")
-        yield json.dumps(tile_layers())
-        await next_code_reload()
-
-
-@app.get("/state")
-async def state():
-    return EventSourceResponse(_state())
+    return EventSourceResponse(_map_state_generator())
 
 
 @app.websocket("/hmr")

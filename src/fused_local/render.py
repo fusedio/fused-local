@@ -98,6 +98,7 @@ def render_tile(
     vmin: float,
     vmax: float,
     cmap: str | None = None,
+    hash: str | None = None,
 ) -> bytes:
     # TODO separation of concerns, raising HTTP error is odd here?
     # that's just being pedantic though
@@ -106,6 +107,12 @@ def render_tile(
     except KeyError:
         raise HTTPException(
             status_code=404, detail=f"Tile layer {layer!r} does not exist"
+        )
+
+    if hash and hash != func.hash:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Tile layer {layer!r}'s hash is now {func.hash!r}, not {hash!r}.",
         )
 
     # 512px seems to give better resolution. not sure what's going on here yet.

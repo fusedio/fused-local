@@ -7,21 +7,31 @@ import { TileLayer } from '@deck.gl/geo-layers';
 import type { TileLayerPickingInfo } from '@deck.gl/geo-layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-const tileUrl = (name: string, vmin: number = 0, vmax: number = 8000) => `http://127.0.0.1:8000/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}`;
+import { MapState, TileLayer as TileLayerModel } from './generated/models';
+
+const tileUrl = (name: string, vmin: number, vmax: number, hash: string) => `http://localhost:8000/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}&hash=${hash}`;
 
 function App() {
-    const [data, setData] = useState<string[]>([]);
+    const [mapState, setMapState] = useState<MapState>(
+        {
+            layers: [],
+            // TODO change default location
+            longitude: 0.45,
+            latitude: 51.47,
+            zoom: 7,
+        }
+    );
     const [isLoading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string|null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const eventSource = new EventSource("http://127.0.0.1:8000/state");
+        const eventSource = new EventSource("/map_state");
 
         eventSource.onmessage = (event) => {
             setLoading(false);
             const state = JSON.parse(event.data);
             console.log(state);
-            setData(state);
+            setMapState(state);
         };
 
         eventSource.onerror = (event) => {
@@ -32,11 +42,12 @@ function App() {
         return () => eventSource.close();
     }, []);
 
-    const layers = data?.map((name) => {
+    const layers = mapState.layers.map((layer) => {
         return new TileLayer({
-            id: name,
-            data: tileUrl(name),
-            minZoom: 7,
+            id: layer.name,
+            data: tileUrl(layer.name, layer.vmin, layer.vmax, layer.hash),
+            minZoom: layer.min_zoom,
+            maxZoom: layer.max_zoom,
             pickable: true,
 
             renderSubLayers: props => {
@@ -53,9 +64,9 @@ function App() {
 
     return <DeckGL
         initialViewState={{
-            longitude: 0.45,
-            latitude: 51.47,
-            zoom: 7
+            longitude: mapState.longitude,
+            latitude: mapState.latitude,
+            zoom: mapState.zoom
         }}
         controller
         getTooltip={({ tile }: TileLayerPickingInfo) => tile && `x:${tile.index.x}, y:${tile.index.y}, z:${tile.index.z}`}
@@ -89,16 +100,12 @@ function App() {
         >
             {isLoading && "Loading..."}
             {error && "Error: " + error}
-            {data && <Layers layerNames={data} />}
+            {mapState && <Layers layers={mapState.layers} />}
         </aside></section>
     </DeckGL>
 }
 
-interface LayersProps {
-    layerNames: string[];
-}
-
-function Layers({ layerNames }: LayersProps) {
+function Layers({ layers }: { layers: TileLayerModel[] }) {
     return <>
         <h3
             style={{
@@ -107,8 +114,8 @@ function Layers({ layerNames }: LayersProps) {
         >
             Layers
         </h3>
-        {layerNames.map((name) => (
-            <div><samp key={name}>{name}</samp></div>
+        {layers.map((layer) => (
+            <div key={layer.hash}><samp>{layer.name} - {layer.hash}</samp></div>
         ))}
     </>
 }
