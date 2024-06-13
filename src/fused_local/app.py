@@ -99,6 +99,7 @@ def tile(
     png = render_tile(layer, z, x, y, vmin, vmax, cmap, hash)
     return Response(png, media_type="image/png")
 
+
 def _map_state() -> MapState:
     return MapState(
         layers=[
@@ -182,10 +183,20 @@ HMR_SCRIPT = """
 </script>
 """
 
+
+# https://stackoverflow.com/a/77823873
+class StaticFilesNoCache(StaticFiles):
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+
 # put at end so that it doesn't shadow other routes
 # https://stackoverflow.com/a/73916745
 app.mount(
     "/",
-    StaticFiles(directory=FRONTEND_DIR, html=True),
+    StaticFilesNoCache(directory=FRONTEND_DIR, html=True),
     name="static",
 )
