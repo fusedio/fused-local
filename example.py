@@ -39,7 +39,7 @@ def s2_scene_june(gbox: GeoBox) -> xr.Dataset:
 #     items = client.search(
 #         collections=["sentinel-2-l2a"],
 #         bbox=tuple(gbox.geographic_extent.boundingbox),
-#         datetime="2021-06-01/2021-08-01",
+#         datetime="2022-06-01/2022-08-01",
 #         query={"eo:cloud_cover": {"lt": 10}},
 #         max_items=20,
 #         # sortby="datetime",
