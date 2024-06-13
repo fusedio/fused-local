@@ -24,7 +24,6 @@ function App() {
         latitude: 51.47,
         zoom: 7,
     });
-    const prevInitialMapState = useRef<InitialMapState>({ ...mapViewState });
     const [tileLayers, setTileLayers] = useState<TileLayerModel[]>([]);
     const [isLoading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -32,9 +31,10 @@ function App() {
     useEffect(() => {
         const eventSource = new EventSource("/app_state");
 
+        let prevInitialMapState: InitialMapState = { ...mapViewState };
         eventSource.onmessage = (event) => {
             const newState: AppState = JSON.parse(event.data);
-            console.log(newState.initial_map_state);
+            console.log(event.data, newState.initial_map_state);
 
             setTileLayers(newState.layers);
 
@@ -42,27 +42,24 @@ function App() {
             // has changed from whatever it previously was, i.e. the user adjusted
             // a `configure_map` call.
 
+            console.log(prevInitialMapState, newState.initial_map_state);
             // FIXME: somehow an extraneous `padding` property is ending up in the `prevInitialMapState`
             // or the `newState.initial_map_state`. This makes absolutely no sense. Which object it ends up
             // in seems to change depending on whether we copy `mapViewState` into `prevInitialMapState` at
             // the beginning, or copy `newState.initial_map_state` into `prevInitialMapState` at the end.
             // Also, running normally, the `console.log` here will show the `padding` property, but if you
             // breakpoint and step through in the debugger, it doesn't (but it still inserts itself later somehow).
+            // Also, useRef doesn't help either.
             // So as a stupid hack workaround, we just compare the fields we care about. This is insane.
             if (
                 newState.initial_map_state.latitude !==
-                    prevInitialMapState.current.latitude ||
+                    prevInitialMapState.latitude ||
                 newState.initial_map_state.longitude !==
-                    prevInitialMapState.current.longitude ||
-                newState.initial_map_state.zoom !==
-                    prevInitialMapState.current.zoom
+                    prevInitialMapState.longitude ||
+                newState.initial_map_state.zoom !== prevInitialMapState.zoom
             ) {
-                console.log(
-                    prevInitialMapState.current,
-                    newState.initial_map_state,
-                );
                 setMapViewState(newState.initial_map_state);
-                prevInitialMapState.current = { ...newState.initial_map_state };
+                prevInitialMapState = { ...newState.initial_map_state };
             }
 
             setError(null);
