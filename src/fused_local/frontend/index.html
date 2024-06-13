@@ -14,7 +14,12 @@
 
 <script>
     (() => {
-        const socketUrl = "ws://127.0.0.1:8000/hmr";
+        const hmrPath = "/hmr"
+        const socketUrl = (
+            (window.location.protocol === "https:" ? "wss://" : "ws://")
+            + window.location.host
+            + hmrPath
+        )
         // https://stackoverflow.com/a/68750487
         // const connect = () => { return new WebSocket(socketUrl, null, null, null, {rejectUnauthorized: false}) };
         const connect = () => { return new WebSocket(socketUrl) };
