@@ -33,6 +33,7 @@ dependencies = [
     "uvicorn[standard]>=0.30.1",
     "gunicorn>=22.0.0",
     "sse-starlette>=2.1.0",
+    "cloudpickle>=3.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
@@ -47,6 +48,7 @@ dev-dependencies = [
     "ipython>=8.25.0",
     "jupyterlab>=4.2.1",
     "py-spy>=0.3.14",
+    "pytest>=8.2.2",
 ]
 
 [tool.rye.scripts]

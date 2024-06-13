@@ -99,6 +99,7 @@ cligj==0.7.2
 cloudpickle==3.0.0
     # via dask
     # via distributed
+    # via fused-local
 color-operations==0.1.3
     # via rio-tiler
 comm==0.2.2
@@ -191,6 +192,8 @@ idna==3.7
     # via yarl
 importlib-metadata==7.1.0
     # via dask
+iniconfig==2.0.0
+    # via pytest
 ipykernel==6.29.4
     # via jupyterlab
 ipyleaflet==0.19.1
@@ -362,6 +365,7 @@ packaging==24.0
     # via matplotlib
     # via nbconvert
     # via planetary-computer
+    # via pytest
     # via rioxarray
     # via xarray
 pandas==2.2.2
@@ -383,6 +387,8 @@ planetary-computer==1.0.0
     # via fused-local
 platformdirs==4.2.2
     # via jupyter-core
+pluggy==1.5.0
+    # via pytest
 priority==2.0.0
     # via hypercorn
 prometheus-client==0.20.0
@@ -436,6 +442,7 @@ pystac==1.10.1
 pystac-client==0.8.2
     # via fused-local
     # via planetary-computer
+pytest==8.2.2
 python-dateutil==2.9.0.post0
     # via arrow
     # via jupyter-client
