@@ -2,19 +2,20 @@ from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
 from typing import AsyncIterator
+import webbrowser
 
 import anyio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 import trio
 
+from fused_local.config import config
 from fused_local.lib import TileFunc, _initial_map_state
 from fused_local.models import AppState, TileLayer
 from fused_local.render import render_tile
 from fused_local.user_code import (
-    USER_CODE_PATH,
     RepeatEvent,
     import_user_code,
     watch_with_event,
@@ -24,7 +25,7 @@ from fused_local.workers import WorkerPool
 
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
-WORKER_POOL = WorkerPool(init=partial(import_user_code, USER_CODE_PATH))
+WORKER_POOL: WorkerPool | None = None
 
 USER_CODE_CHANGED = RepeatEvent()
 POOL_RESTARTED_AFTER_CODE_CHANGE = RepeatEvent()
@@ -36,7 +37,10 @@ async def lifespan(app: FastAPI):
     # TODO is there a nicer way to get the user code path in here than a global variable?
     async with anyio.create_task_group() as tg:
         tg.start_soon(
-            watch_with_event, USER_CODE_PATH, USER_CODE_CHANGED, name="Code watcher"
+            watch_with_event,
+            config().user_code_path,
+            USER_CODE_CHANGED,
+            name="Code watcher",
         )
         tg.start_soon(
             watch_with_event,
@@ -45,10 +49,15 @@ async def lifespan(app: FastAPI):
             name="Frontend watcher",
         )
 
+        global WORKER_POOL
+        WORKER_POOL = WorkerPool(
+            init=partial(import_user_code, config().user_code_path)
+        )
         async with WORKER_POOL:
             print("started worker pool")
 
             async def reimport_on_code_reload():
+                assert WORKER_POOL
                 while True:
                     await USER_CODE_CHANGED.wait()
                     print("re-importing on worker pool")
@@ -58,13 +67,18 @@ async def lifespan(app: FastAPI):
                         # forkserver running well enough to make this quick, because
                         # it's unclear how well our hacky import process works with
                         # multiple files, imports, new dependencies, etc.
-                        await WORKER_POOL.run_sync_all(reload_user_code, USER_CODE_PATH)
+                        await WORKER_POOL.run_sync_all(
+                            reload_user_code, config().user_code_path
+                        )
                     except trio.ClosedResourceError:
                         print("not re-importing on pool")
                         return
                     POOL_RESTARTED_AFTER_CODE_CHANGE.reset()
 
             tg.start_soon(reimport_on_code_reload, name="Worker pool re-importer")
+
+            if config().open_browser:
+                webbrowser.open_new_tab(config().url)
 
             yield
 
@@ -91,6 +105,7 @@ async def tile(
     # future, maybe versions would be explicit. For now, it's used just to make deck.gl
     # reload a tile when the user code changes, by changing the URL.
 ):
+    assert WORKER_POOL
     png = await WORKER_POOL.run_sync(
         render_tile, layer, z, x, y, vmin, vmax, cmap, hash
     )
@@ -119,6 +134,7 @@ def _app_state_json() -> str:
 @app.get("/app_state")
 async def app_state():
     async def _app_state_generator() -> AsyncIterator[str]:
+        assert WORKER_POOL
         while True:
             # NOTE: we have to go to workers for this because we aren't actually
             # importing user code in the app for isolation reasons
@@ -158,10 +174,76 @@ class StaticFilesNoCache(StaticFiles):
         return response
 
 
-# put at end so that it doesn't shadow other routes
-# https://stackoverflow.com/a/73916745
-app.mount(
-    "/",
-    StaticFilesNoCache(directory=FRONTEND_DIR, html=True),
-    name="static",
-)
+# Dynamically add routes for static files, depending on whether we're running in dev mode or not.
+# Called in `serve.py`.
+def setup_static_serving():
+    if config().dev:
+
+        @app.get("/")
+        async def root():
+            # - add HMR (cause we're HTTP/1.1, so websockets won't crash hyper)
+            # - disable cache
+            with open(FRONTEND_DIR / "index.html") as f:
+                html = f.read()
+
+            return HTMLResponse(
+                html + "\n" + HMR,
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Expires": "0",
+                },
+            )
+
+        app.mount(
+            "/",
+            StaticFilesNoCache(directory=FRONTEND_DIR, html=True),
+            name="static",
+        )
+    else:
+        app.mount(
+            "/",
+            StaticFiles(directory=FRONTEND_DIR, html=True),
+            name="static",
+        )
+
+
+HMR = """
+<script>
+    (() => {
+        const hmrPath = "/hmr"
+        const socketUrl = (
+            (window.location.protocol === "https:" ? "wss://" : "ws://")
+            + window.location.host
+            + hmrPath
+        )
+        // https://stackoverflow.com/a/68750487
+        // const connect = () => { return new WebSocket(socketUrl, null, null, null, {rejectUnauthorized: false}) };
+        const connect = () => { return new WebSocket(socketUrl) };
+        var ws = connect();
+        /*
+        * Hot Module Reload
+        */
+        ws.addEventListener('close', () => {
+            const interAttemptTimeoutMilliseconds = 500;
+            const maxAttempts = 5;
+            let attempts = 0;
+            const reloadIfCanConnect = () => {
+                console.log('[WS:info]', 'Attempting to reconnect to dev server...');
+                attempts++;
+                if (attempts > maxAttempts) {
+                    console.error('[WS:error]', 'HMR could not reconnect to dev server.');
+                    return;
+                }
+                socket = connect();
+                socket.addEventListener('error', () => {
+                    setTimeout(reloadIfCanConnect, interAttemptTimeoutMilliseconds);
+                });
+                socket.addEventListener('open', () => {
+                    location.reload();
+                });
+            };
+            reloadIfCanConnect();
+        });
+    })();
+</script>
+"""

@@ -34,9 +34,13 @@ dependencies = [
     "cloudpickle>=3.0.0",
     "geopy>=2.4.1",
     "trio-parallel>=1.2.2",
+    "typer>=0.12.3",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
+
+[project.scripts]
+fused-local = "fused_local.serve:cli"
 
 [build-system]
 requires = ["hatchling"]

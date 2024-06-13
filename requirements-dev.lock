@@ -605,6 +605,7 @@ trio-parallel==1.2.2
     # via fused-local
 typer==0.12.3
     # via fastapi-cli
+    # via fused-local
 types-python-dateutil==2.9.0.20240316
     # via arrow
 typing-extensions==4.12.0

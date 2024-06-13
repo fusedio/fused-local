@@ -7,10 +7,6 @@ import anyio
 from watchfiles import awatch
 
 
-# HACK just hardcode for now
-USER_CODE_PATH = Path.cwd() / "example.py"
-
-
 def import_user_code(path: Path) -> ModuleType:
     # TODO see what streamlit does. they might just modify
     # sys.path, which might make more sense in the end.

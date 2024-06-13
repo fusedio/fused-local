@@ -1,99 +1,77 @@
-import datetime
-import sys
-from os import PathLike
 from pathlib import Path
+from typing import Annotated
 
 import trio
 from hypercorn.trio import serve
-from hypercorn.config import Config
+from hypercorn.config import Config as HyperConfig
 
-from fused_local.app import app
+from fused_local.app import app, setup_static_serving
+from fused_local.local_certs import generate_certs
+import fused_local.config
+
+import typer
 
 # TODO: we can't easily serve HTTP/2 over localhost, because it requires HTTPS.
 # The browser won't trust our self-signed certificates, which isn't great UX.
 # See https://freedium.cfd/https://levelup.gitconnected.com/deploy-fastapi-with-hypercorn-http-2-asgi-8cfc304e9e7a
+# But the speedup is rather nice.
+
+cli = typer.Typer()
 
 
-def generate_certs(key_file: PathLike, cert_file: PathLike):
-    # copied from https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate
-    # modified to remove passphrase and extend expiry
-    from cryptography import x509
-    from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.x509.oid import NameOID
+@cli.command()
+def main(
+    code_path: Annotated[
+        Path, typer.Argument(help="Local .py script to watch and render")
+    ],
+    dev: Annotated[
+        bool,
+        typer.Option(
+            help="Enable hot-reloading of frontend code, disable HTTP/2 and TLS"
+        ),
+    ] = False,
+    open: Annotated[
+        bool, typer.Option(help="Open the map in the default browser")
+    ] = False,
+):
+    """Code to map, instantly.
 
-    # Generate our key
-    key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
+    Write code in a .py file. Annotate functions with ``@fused_local.tile`` that take a
+    `GeoBox`. Fused will open an interactive map in your browser where that function
+    gets re-run as you move around the map.
+    """
+    protocol = "http" if dev else "https"
+    host = "127.0.0.1:8000"
+
+    fused_local.config._config = fused_local.config.Config(
+        dev=dev, user_code_path=code_path, url=f"{protocol}://{host}", open_browser=open
     )
-    # Write our key to disk for safe keeping
 
-    with open(key_file, "wb") as f:
-        f.write(
-            key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-        )
+    hyper_config = HyperConfig()
+    hyper_config.bind = [host]
+    # config.accesslog = "-"
+    # config.errorlog = "-"
 
-    # Various details about who we are. For a self-signed certificate the
-    # subject and issuer are always the same.
-    subject = issuer = x509.Name(
-        [
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "My Company"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "mysite.com"),
-        ]
-    )
-    cert = (
-        x509.CertificateBuilder()
-        .subject_name(subject)
-        .issuer_name(issuer)
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
-        .not_valid_after(
-            # Set the certificate to never expire
-            datetime.datetime.now(datetime.timezone.utc)
-            + datetime.timedelta(days=36525)
-        )
-        .add_extension(
-            x509.SubjectAlternativeName([x509.DNSName("localhost")]),
-            critical=False,
-            # Sign our certificate with our private key
-        )
-        .sign(key, hashes.SHA256())
-    )
-    # Write our certificate out to disk.
-    with open(cert_file, "wb") as f:
-        f.write(cert.public_bytes(serialization.Encoding.PEM))
+    if not dev:
+        # TODO base on path of file we're serving?
+        # better yet, store in the cache?
+        key_file = Path.cwd() / "key.pem"
+        cert_file = Path.cwd() / "cert.pem"
 
+        if not key_file.exists() or not cert_file.exists():
+            print(f"Generating self-signed certificate to {key_file} and {cert_file}")
+            generate_certs(key_file, cert_file)
 
-# TODO base on path of file we're serving?
-# better yet, store in the cache?
-key_file = Path.cwd() / "key.pem"
-cert_file = Path.cwd() / "cert.pem"
+        # FIXME re-enable HTTPS so we can use HTTP/2
+        # websockets seem to break in hypercorn with http2, though.
+        hyper_config.keyfile = str(key_file)
+        hyper_config.certfile = str(cert_file)
+
+    # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
+
+    setup_static_serving()
+    trio.run(serve, app, hyper_config)
 
 
 if __name__ == "__main__":
-    # if not key_file.exists() or not cert_file.exists():
-    #     print(f"Generating self-signed certificate to {key_file} and {cert_file}")
-    #     generate_certs(key_file, cert_file)
-
-    config = Config()
-    config.bind = ["127.0.0.1:8000"]
-    # config.accesslog = "-"
-    # config.errorlog = "-"
-    # FIXME re-enable HTTPS so we can use HTTP/2
-    # websockets seem to break in hypercorn with http2, though.
-    # config.keyfile = str(key_file)
-    # config.certfile = str(cert_file)
-
-    code_path = Path(sys.argv[1]).absolute()
-
-    # TODO anyio?: https://github.com/pgjones/hypercorn/issues/184#issuecomment-1943483328
-    trio.run(serve, app, config)
+    cli()
