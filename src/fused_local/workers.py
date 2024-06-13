@@ -121,19 +121,23 @@ if __name__ == "__main__":
     from fused_local.user_code import (
         USER_CODE_PATH,
         import_user_code,
-        next_code_reload,
-        watch_reload_user_code,
+        watch_with_event,
+        RepeatEvent,
     )
 
     def _worker_init():
         print(f"worker init {os.getpid()}")
         import_user_code(USER_CODE_PATH)
 
+    USER_CODE_CHANGED = RepeatEvent()
+
     async def main():
         try:
             async with trio.open_nursery() as nursery:
                 async with WorkerPool(2, init=_worker_init) as pool:
-                    nursery.start_soon(watch_reload_user_code, USER_CODE_PATH)
+                    nursery.start_soon(
+                        watch_with_event, USER_CODE_PATH, USER_CODE_CHANGED
+                    )
 
                     async def submit_loop():
                         while True:
@@ -153,7 +157,7 @@ if __name__ == "__main__":
                     nursery.start_soon(submit_loop)
 
                     while True:
-                        await next_code_reload()
+                        await USER_CODE_CHANGED.wait()
                         print("restarting worker pool")
                         await pool.restart()
                         print("restarted worker pool")

@@ -5,7 +5,6 @@ from types import ModuleType
 
 import anyio
 from watchfiles import awatch
-import fused_local.lib
 
 
 # HACK just hardcode for now
@@ -40,46 +39,32 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
-_code_reload_event = anyio.Event()
-_frontend_reload_event = anyio.Event()
+class RepeatEvent:
+    _event: anyio.Event
+
+    def __init__(self) -> None:
+        self._event = anyio.Event()
+
+    async def wait(self) -> None:
+        await self._event.wait()
+
+    def set(self) -> None:
+        self._event.set()
+
+    def clear(self) -> None:
+        assert self._event.is_set(), "Clearing an un-set event could cause deadlocks"
+        self._event = anyio.Event()
+
+    def reset(self) -> None:
+        self.set()
+        self.clear()
 
 
-async def next_code_reload() -> None:
-    # Importing `_reloaded_event` would be a bad idea since it gets swapped out,
-    # so wrap in a function
-    await _code_reload_event.wait()
+async def watch_with_event(path: Path, event: RepeatEvent) -> RepeatEvent:
+    async for _ in awatch(path):
+        event.reset()
 
-async def next_frontend_reload() -> None:
-    await _frontend_reload_event.wait()
-
-
-async def watch_reload_user_code(code_path: Path):
-    # TODO what about when you have multiple files with imports?
-    # when your file imports another?
-    # basically we're not handling multiple files at all yet
-    global _code_reload_event
-    import_user_code(code_path)
-
-    async for _ in awatch(code_path):
-        # TODO: thread safety around `TileFunc._instances`
-        # because tile render functions are run in a threadpool, there are race conditions here
-        fused_local.lib.TileFunc._instances.clear()
-
-        print(f"reloading {code_path}")
-        import_user_code(code_path)
-
-        _code_reload_event.set()
-        print("send reload message")
-        # NOTE: trio events don't have a `clear` method, so we just make a new one
-        _code_reload_event = anyio.Event()
-
-
-async def watch_for_frontend_reload(*paths: Path):
-    global _frontend_reload_event
-    async for _ in awatch(*paths):
-        print("triggering live reload")
-        _frontend_reload_event.set()
-        _frontend_reload_event = anyio.Event()
+    return event
 
 
 if __name__ == "__main__":

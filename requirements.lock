@@ -220,7 +220,6 @@ jinja2==3.1.4
     # via jupyterlab
     # via jupyterlab-server
     # via nbconvert
-    # via pydeck
     # via titiler-core
 json5==0.9.25
     # via jupyterlab-server
@@ -333,7 +332,6 @@ numpy==1.26.4
     # via odc-geo
     # via odc-stac
     # via pandas
-    # via pydeck
     # via rasterio
     # via rio-cogeo
     # via rio-tiler
@@ -417,8 +415,6 @@ pydantic==2.7.2
     # via titiler-core
 pydantic-core==2.18.3
     # via pydantic
-pydeck==0.9.1
-    # via fused-local
 pygments==2.18.0
     # via ipython
     # via nbconvert
