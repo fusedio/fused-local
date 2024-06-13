@@ -25,6 +25,7 @@ function App() {
         zoom: 7,
     });
     const [tileLayers, setTileLayers] = useState<TileLayerModel[]>([]);
+    const [title, setTitle] = useState<string | null>(null);
     const [isLoading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -34,15 +35,14 @@ function App() {
         let prevInitialMapState: InitialMapState = { ...mapViewState };
         eventSource.onmessage = (event) => {
             const newState: AppState = JSON.parse(event.data);
-            console.log(event.data, newState.initial_map_state);
 
             setTileLayers(newState.layers);
+            setTitle(newState.initial_map_state.title || null);
 
             // Only reposition the map when the initial state defined on the backend
             // has changed from whatever it previously was, i.e. the user adjusted
             // a `configure_map` call.
 
-            console.log(prevInitialMapState, newState.initial_map_state);
             // FIXME: somehow an extraneous `padding` property is ending up in the `prevInitialMapState`
             // or the `newState.initial_map_state`. This makes absolutely no sense. Which object it ends up
             // in seems to change depending on whether we copy `mapViewState` into `prevInitialMapState` at
@@ -58,6 +58,7 @@ function App() {
                     prevInitialMapState.longitude ||
                 newState.initial_map_state.zoom !== prevInitialMapState.zoom
             ) {
+                console.log(prevInitialMapState, newState.initial_map_state);
                 setMapViewState(newState.initial_map_state);
                 prevInitialMapState = { ...newState.initial_map_state };
             }
@@ -135,6 +136,8 @@ function App() {
                         // zIndex: 1,
                     }}
                 >
+                    {title && <h2>{title}</h2>}
+
                     {isLoading && "Loading..."}
                     {error && (
                         <span style={{ color: "red" }}>
@@ -151,17 +154,17 @@ function App() {
 function Layers({ layers }: { layers: TileLayerModel[] }) {
     return (
         <>
-            <h3
+            <h4
                 style={{
                     margin: "0.3rem 0.1rem",
                 }}
             >
                 Layers
-            </h3>
+            </h4>
             {layers.map((layer) => (
                 <div key={layer.hash}>
                     <samp>
-                        {layer.name} - {layer.hash}
+                        {layer.name} - {layer.hash.slice(0, 8)}
                     </samp>
                 </div>
             ))}

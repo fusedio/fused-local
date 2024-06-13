@@ -8,6 +8,12 @@ from odc.geo.geobox import GeoBox
 
 print("foo")
 
+fused_local.configure_map(
+    # title="Sentinel-2 demo",
+    center="santa fe, nm",
+    zoom=9,
+)
+
 
 @fused_local.tile
 def s2_scene_june(gbox: GeoBox) -> xr.Dataset:

@@ -1,4 +1,5 @@
 from functools import singledispatchmethod
+import geopy.geocoders
 from typing import Callable, Concatenate, Generic, ParamSpec, Self, TypeVar
 from weakref import WeakValueDictionary
 
@@ -8,6 +9,7 @@ from odc.geo.geobox import GeoBox
 
 from fused_local.cache import cache
 from fused_local.hash import tokenize
+from fused_local.models import InitialMapState
 
 VectorMappable = geopandas.GeoDataFrame | geopandas.GeoSeries
 RasterMappable = xarray.DataArray | xarray.Dataset
@@ -271,3 +273,63 @@ def map(
     computation that would only be done to show the secondary layers.
     """
     ...
+
+
+_INITIAL_STATE = InitialMapState(
+    title=None,
+    longitude=-105.78,
+    latitude=35.79,
+    zoom=8,
+)
+
+
+@cache
+def _geocode(center: str) -> tuple[float, float]:
+    loc = geopy.geocoders.Nominatim(user_agent="fused_local").geocode(center)
+    print(f"{center} -> {loc}")
+    return loc.longitude, loc.latitude  # type: ignore
+
+
+def _initial_map_state() -> InitialMapState:
+    return _INITIAL_STATE
+
+
+def configure_map(
+    *,
+    title: str | None = None,
+    center: str | None = None,
+    lon: float = -105.78,
+    lat: float = 35.79,
+    zoom: int = 8,
+):
+    """
+    Configure the initial state of the map.
+
+    Note that this must be called *outside* any `tile`, `region`, or `file` functions,
+    or it will not have any effect.
+
+    Parameters
+    ----------
+    title:
+        The title to display at the top of the map.
+    center:
+        A location to center the map on, like "New York, NY" or "Paris, France".
+        If given, this overrides `lon` and `lat`.
+    lon:
+        The initial longitude to center the map on.
+    lat:
+        The initial latitude to center the map on.
+    zoom:
+        The initial zoom level of the map.
+    """
+    # TODO detect if called within a tile function and raise an error
+    global _INITIAL_STATE
+    if center is not None:
+        lon, lat = _geocode(center)
+
+    _INITIAL_STATE = InitialMapState(
+        title=title,
+        longitude=lon,
+        latitude=lat,
+        zoom=zoom,
+    )

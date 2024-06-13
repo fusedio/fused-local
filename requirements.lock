@@ -154,10 +154,14 @@ fsspec==2024.6.0
     # via dask
 geocube==0.5.2
     # via fused-local
+geographiclib==2.0
+    # via geopy
 geojson-pydantic==1.1.0
     # via titiler-core
 geopandas==0.14.4
     # via geocube
+geopy==2.4.1
+    # via fused-local
 gunicorn==22.0.0
     # via fused-local
 h11==0.14.0

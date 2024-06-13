@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
-from fused_local.lib import TileFunc
+from fused_local.lib import TileFunc, _initial_map_state
 from fused_local.models import AppState, InitialMapState, TileLayer
 from fused_local.render import render_tile
 from fused_local.user_code import (
@@ -114,12 +114,7 @@ def _app_state() -> AppState:
             )
             for t in TileFunc._instances.values()
         ],
-        initial_map_state=InitialMapState(
-            # TODO allow configuring
-            longitude=-105.78,
-            latitude=35.79,
-            zoom=9,
-        ),
+        initial_map_state=_initial_map_state(),
     )
 
 

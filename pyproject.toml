@@ -33,6 +33,7 @@ dependencies = [
     "gunicorn>=22.0.0",
     "sse-starlette>=2.1.0",
     "cloudpickle>=3.0.0",
+    "geopy>=2.4.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

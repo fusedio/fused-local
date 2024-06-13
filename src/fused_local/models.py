@@ -14,6 +14,7 @@ class TileLayer(pydantic.BaseModel):
 
 
 class InitialMapState(pydantic.BaseModel):
+    title: str | None = None
     longitude: float
     latitude: float
     zoom: int
