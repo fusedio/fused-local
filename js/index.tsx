@@ -1,10 +1,8 @@
-import { createRoot } from 'react-dom/client';
-import App from './map';
+import { createRoot } from "react-dom/client";
+import App from "./map";
 
 const Index = () => {
-    return (
-        <App />
-    );
-}
+    return <App />;
+};
 
-createRoot(document.getElementById('app') as HTMLElement).render(<Index />);
+createRoot(document.getElementById("app") as HTMLElement).render(<Index />);
