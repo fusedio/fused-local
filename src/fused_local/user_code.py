@@ -39,6 +39,13 @@ def import_user_code(path: Path) -> ModuleType:
     return module
 
 
+def reload_user_code(path: Path) -> None:
+    from fused_local.lib import TileFunc
+
+    TileFunc._instances.clear()
+    import_user_code(path)
+
+
 class RepeatEvent:
     _event: anyio.Event
 

@@ -18,6 +18,7 @@ from fused_local.user_code import (
     RepeatEvent,
     import_user_code,
     watch_with_event,
+    reload_user_code,
 )
 from fused_local.workers import WorkerPool
 
@@ -32,9 +33,7 @@ FRONTEND_CODE_CHANGED = RepeatEvent()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # TODO allow passing in file as CLI argument.
-    # uvcorn/gunicorn won't accept extraneous arguments, so easier to hardcode for prototype.
-
+    # TODO is there a nicer way to get the user code path in here than a global variable?
     async with anyio.create_task_group() as tg:
         tg.start_soon(
             watch_with_event, USER_CODE_PATH, USER_CODE_CHANGED, name="Code watcher"
@@ -49,18 +48,23 @@ async def lifespan(app: FastAPI):
         async with WORKER_POOL:
             print("started worker pool")
 
-            async def restart_on_code_reload():
+            async def reimport_on_code_reload():
                 while True:
                     await USER_CODE_CHANGED.wait()
-                    print("restarting worker pool")
+                    print("re-importing on worker pool")
                     try:
-                        await WORKER_POOL.restart()
+                        # NOTE: for now, we just re-import without restarting worker
+                        # processes, because it's so much faster. Ideally we might get a
+                        # forkserver running well enough to make this quick, because
+                        # it's unclear how well our hacky import process works with
+                        # multiple files, imports, new dependencies, etc.
+                        await WORKER_POOL.run_sync_all(reload_user_code, USER_CODE_PATH)
                     except trio.ClosedResourceError:
-                        print("not restarting pool")
+                        print("not re-importing on pool")
                         return
                     POOL_RESTARTED_AFTER_CODE_CHANGE.reset()
 
-            tg.start_soon(restart_on_code_reload, name="Worker pool restarter")
+            tg.start_soon(reimport_on_code_reload, name="Worker pool re-importer")
 
             yield
 

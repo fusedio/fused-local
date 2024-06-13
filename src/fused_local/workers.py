@@ -112,6 +112,14 @@ class WorkerPool:
 
         return await ctx.run_sync(partial(func, *args, **kwargs), cancellable=True)
 
+    async def run_sync_all(
+        self, func: Callable[P, R], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
+        "Convenience to run ``sync_fn(*args)`` on all workers"
+        async with trio.open_nursery() as nursery:
+            for _ in range(self.n_workers):
+                nursery.start_soon(partial(self.run_sync, func, *args, **kwargs))
+
     @property
     def n_workers(self) -> int:
         return self._limiter.total_tokens  # type: ignore
