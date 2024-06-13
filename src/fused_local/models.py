@@ -11,6 +11,7 @@ class TileLayer(pydantic.BaseModel):
     min_zoom: int
     vmin: int | float
     vmax: int | float
+    visible: bool
 
 
 class InitialMapState(pydantic.BaseModel):

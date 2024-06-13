@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
 from fused_local.lib import TileFunc, _initial_map_state
-from fused_local.models import AppState, InitialMapState, TileLayer
+from fused_local.models import AppState, TileLayer
 from fused_local.render import render_tile
 from fused_local.user_code import (
     USER_CODE_PATH,
@@ -110,7 +110,8 @@ def _app_state() -> AppState:
                 min_zoom=6,
                 max_zoom=16,
                 vmin=0,
-                vmax=8000,
+                vmax=6000,
+                visible=True,
             )
             for t in TileFunc._instances.values()
         ],

@@ -1,18 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Map } from "react-map-gl/maplibre";
-import DeckGL from "@deck.gl/react";
-import useSWR from "swr";
-import { ScatterplotLayer, BitmapLayer } from "@deck.gl/layers";
 import { TileLayer } from "@deck.gl/geo-layers";
-import type { TileLayerPickingInfo } from "@deck.gl/geo-layers";
+import { BitmapLayer } from "@deck.gl/layers";
+import DeckGL from "@deck.gl/react";
+import { produce } from "immer";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useState } from "react";
+import { Map } from "react-map-gl/maplibre";
 
+import { MapViewState } from "@deck.gl/core";
 import {
-    InitialMapState,
     AppState,
+    InitialMapState,
     TileLayer as TileLayerModel,
 } from "./generated/models";
-import { MapViewState } from "@deck.gl/core";
 
 const tileUrl = (name: string, vmin: number, vmax: number, hash: string) =>
     `/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}&hash=${hash}`;
@@ -82,6 +81,7 @@ function App() {
             minZoom: layer.min_zoom,
             maxZoom: layer.max_zoom,
             pickable: true,
+            visible: layer.visible,
 
             renderSubLayers: (props) => {
                 const { boundingBox } = props.tile;
@@ -104,22 +104,15 @@ function App() {
         <DeckGL
             viewState={mapViewState}
             onViewStateChange={(e) => setMapViewState(e.viewState)}
-            controller
-            getTooltip={({ tile }: TileLayerPickingInfo) =>
-                tile &&
-                `x:${tile.index.x}, y:${tile.index.y}, z:${tile.index.z}`
-            }
+            controller={{
+                keyboard: false,
+            }}
+            // getTooltip={({ tile }: TileLayerPickingInfo) =>
+            //     tile &&
+            //     `x:${tile.index.x}, y:${tile.index.y}, z:${tile.index.z}`
+            // }
             layers={layers}
         >
-            {/* <ScatterplotLayer
-            data={[
-                { position: [-0.05, 51.47], size: 1000 },
-                { position: [0.05, 51.47], size: 500 },
-                { position: [0.45, 51.47], size: 2000 }
-            ]}
-            getPosition={d => d.position}
-            getRadius={d => d.size}
-        /> */}
             <Map mapStyle="https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json" />
             <section>
                 <aside
@@ -127,7 +120,8 @@ function App() {
                         position: "absolute",
                         top: 0,
                         left: 0,
-                        backgroundColor: "white",
+                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                        backdropFilter: "blur(5px)",
                         padding: "0.75rem",
                         minWidth: "10rem",
                         width: "initial",
@@ -136,7 +130,7 @@ function App() {
                         // zIndex: 1,
                     }}
                 >
-                    {title && <h2>{title}</h2>}
+                    {title && <h2 style={{margin: "0.3rem 0"}}>{title}</h2>}
 
                     {isLoading && "Loading..."}
                     {error && (
@@ -144,30 +138,104 @@ function App() {
                             Disconnected from server
                         </span>
                     )}
-                    {tileLayers && <Layers layers={tileLayers} />}
+                    {tileLayers && (
+                        <Layers layers={tileLayers} onChange={setTileLayers} />
+                    )}
                 </aside>
             </section>
         </DeckGL>
     );
 }
 
-function Layers({ layers }: { layers: TileLayerModel[] }) {
+function Layers({
+    layers,
+    onChange,
+}: {
+    layers: TileLayerModel[];
+    onChange: (layers: TileLayerModel[]) => void;
+}) {
+    const inputStyle: React.CSSProperties = {
+        display: "initial",
+        maxWidth: "4rem",
+        margin: "0 0.2rem",
+        padding: "0.2rem 0.4rem",
+    };
+    const labelStyle: React.CSSProperties = {
+        display: "initial",
+        margin: "0 0.2rem",
+        fontWeight: "initial"
+    };
     return (
         <>
-            <h4
-                style={{
-                    margin: "0.3rem 0.1rem",
-                }}
-            >
-                Layers
-            </h4>
-            {layers.map((layer) => (
-                <div key={layer.hash}>
-                    <samp>
-                        {layer.name} - {layer.hash.slice(0, 8)}
-                    </samp>
-                </div>
-            ))}
+            <details style={{margin: 0}} open>
+                <summary>
+                    <h4
+                        style={{
+                            margin: "0.3rem 0.1rem",
+                            display: "inline",
+                        }}
+                    >
+                        Layers
+                    </h4>
+                </summary>
+                {layers
+                    .map((layer, index) => (
+                        <div key={layer.hash}>
+                            <label style={labelStyle}>
+                                <input
+                                    type="checkbox"
+                                    checked={layer.visible}
+                                    onChange={(e) => {
+                                        onChange(
+                                            produce(layers, (draft) => {
+                                                draft[index].visible =
+                                                    e.target.checked;
+                                            }),
+                                        );
+                                    }}
+                                />
+                                <samp>
+                                    {layer.name} - {layer.hash.slice(0, 8)}
+                                </samp>
+                            </label>
+                            <label style={labelStyle}>
+                                vmin:
+                                <input
+                                    type="number"
+                                    style={inputStyle}
+                                    value={layer.vmin}
+                                    onChange={(e) => {
+                                        onChange(
+                                            produce(layers, (draft) => {
+                                                draft[index].vmin = Number(
+                                                    e.target.value,
+                                                );
+                                            }),
+                                        );
+                                    }}
+                                />
+                            </label>
+                            <label style={labelStyle}>
+                                vmax:
+                                <input
+                                    type="number"
+                                    style={inputStyle}
+                                    value={layer.vmax}
+                                    onChange={(e) => {
+                                        onChange(
+                                            produce(layers, (draft) => {
+                                                draft[index].vmax = Number(
+                                                    e.target.value,
+                                                );
+                                            }),
+                                        );
+                                    }}
+                                />
+                            </label>
+                        </div>
+                    ))
+                    .reverse()}
+            </details>
         </>
     );
 }
