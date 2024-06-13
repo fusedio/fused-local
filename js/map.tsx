@@ -105,7 +105,9 @@ function App() {
             viewState={mapViewState}
             onViewStateChange={(e) => setMapViewState(e.viewState)}
             controller={{
+                // TODO make these not happen on the layers overlay, then re-enable
                 keyboard: false,
+                doubleClickZoom: false,
             }}
             // getTooltip={({ tile }: TileLayerPickingInfo) =>
             //     tile &&
@@ -130,16 +132,25 @@ function App() {
                         // zIndex: 1,
                     }}
                 >
-                    {title && <h2 style={{margin: "0.3rem 0"}}>{title}</h2>}
+                    <details style={{ margin: 0 }} open>
+                        <summary>
+                            <h4
+                                style={{
+                                    margin: "0.3rem 0.1rem",
+                                    display: "inline",
+                                }}
+                            >
+                                {title || "Layers"}
+                            </h4>
+                        </summary>
+                        <Layers layers={tileLayers} onChange={setTileLayers} />
+                    </details>
 
                     {isLoading && "Loading..."}
                     {error && (
                         <span style={{ color: "red" }}>
                             Disconnected from server
                         </span>
-                    )}
-                    {tileLayers && (
-                        <Layers layers={tileLayers} onChange={setTileLayers} />
                     )}
                 </aside>
             </section>
@@ -163,79 +174,67 @@ function Layers({
     const labelStyle: React.CSSProperties = {
         display: "initial",
         margin: "0 0.2rem",
-        fontWeight: "initial"
+        fontWeight: "initial",
     };
     return (
         <>
-            <details style={{margin: 0}} open>
-                <summary>
-                    <h4
-                        style={{
-                            margin: "0.3rem 0.1rem",
-                            display: "inline",
-                        }}
-                    >
-                        Layers
-                    </h4>
-                </summary>
-                {layers
-                    .map((layer, index) => (
-                        <div key={layer.hash}>
-                            <label style={labelStyle}>
-                                <input
-                                    type="checkbox"
-                                    checked={layer.visible}
-                                    onChange={(e) => {
-                                        onChange(
-                                            produce(layers, (draft) => {
-                                                draft[index].visible =
-                                                    e.target.checked;
-                                            }),
-                                        );
-                                    }}
-                                />
-                                <samp>
-                                    {layer.name} - {layer.hash.slice(0, 8)}
-                                </samp>
-                            </label>
-                            <label style={labelStyle}>
-                                vmin:
-                                <input
-                                    type="number"
-                                    style={inputStyle}
-                                    value={layer.vmin}
-                                    onChange={(e) => {
-                                        onChange(
-                                            produce(layers, (draft) => {
-                                                draft[index].vmin = Number(
-                                                    e.target.value,
-                                                );
-                                            }),
-                                        );
-                                    }}
-                                />
-                            </label>
-                            <label style={labelStyle}>
-                                vmax:
-                                <input
-                                    type="number"
-                                    style={inputStyle}
-                                    value={layer.vmax}
-                                    onChange={(e) => {
-                                        onChange(
-                                            produce(layers, (draft) => {
-                                                draft[index].vmax = Number(
-                                                    e.target.value,
-                                                );
-                                            }),
-                                        );
-                                    }}
-                                />
-                            </label>
-                        </div>
-                    ))
-                    .reverse()}
-            </details>
+            {layers
+                .map((layer, index) => (
+                    <div key={layer.hash}>
+                        <label style={labelStyle}>
+                            <input
+                                type="checkbox"
+                                checked={layer.visible}
+                                onChange={(e) => {
+                                    onChange(
+                                        produce(layers, (draft) => {
+                                            draft[index].visible =
+                                                e.target.checked;
+                                        }),
+                                    );
+                                }}
+                            />
+                            <samp>
+                                {layer.name} - {layer.hash.slice(0, 8)}
+                            </samp>
+                        </label>
+                        <label style={labelStyle}>
+                            vmin:
+                            <input
+                                type="number"
+                                style={inputStyle}
+                                value={layer.vmin}
+                                onChange={(e) => {
+                                    onChange(
+                                        produce(layers, (draft) => {
+                                            draft[index].vmin = Number(
+                                                e.target.value,
+                                            );
+                                        }),
+                                    );
+                                }}
+                            />
+                        </label>
+                        <label style={labelStyle}>
+                            vmax:
+                            <input
+                                type="number"
+                                style={inputStyle}
+                                value={layer.vmax}
+                                onChange={(e) => {
+                                    onChange(
+                                        produce(layers, (draft) => {
+                                            draft[index].vmax = Number(
+                                                e.target.value,
+                                            );
+                                        }),
+                                    );
+                                }}
+                            />
+                        </label>
+                    </div>
+                ))
+                .reverse()}
         </>
     );
 }
