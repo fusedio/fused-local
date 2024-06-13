@@ -102,6 +102,8 @@ function App() {
 
     return (
         <DeckGL
+            // FIXME: trackpad scrolling is broken on safari with `viewState` managed in React 18!
+            // https://github.com/visgl/deck.gl/issues/7158#issuecomment-1329722960
             viewState={mapViewState}
             onViewStateChange={(e) => setMapViewState(e.viewState)}
             controller={{
