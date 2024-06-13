@@ -2,7 +2,7 @@ import functools
 from pathlib import Path
 from typing import Callable, ParamSpec, TypeVar
 import diskcache
-from dask.base import tokenize, TokenizationError  # TODO remove dask dependency
+from fused_local.hash import tokenize
 
 
 P = ParamSpec("P")
@@ -28,19 +28,13 @@ def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P
 
     @functools.wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        try:
-            key = tokenize(func_key, *args, **kwargs, ensure_deterministic=True)
-        except TokenizationError:
-            # not cacheable
-            # TODO log
-            print(f"not cacheable {func} {args}")
-            return func(*args, **kwargs)
+        key = tokenize(func_key, *args, **kwargs)
 
         lock_key = f"{key}-lock"
         try:
             r = _cache[key]  # type: ignore
             # print(f"cache hit {func} {args}")
-            return r
+            return r  # type: ignore
         except KeyError:
             pass
 
@@ -49,7 +43,7 @@ def cache(func: Callable[P, R], expire: int | None = 24 * 60 * 60) -> Callable[P
             try:
                 r = _cache[key]  # type: ignore
                 # print(f"cache hit 2 {func} {args}")
-                return r
+                return r  # type: ignore
             except KeyError:
                 pass
 

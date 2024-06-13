@@ -2,12 +2,12 @@ from functools import singledispatchmethod
 from typing import Callable, Concatenate, Generic, ParamSpec, Self, TypeVar
 from weakref import WeakValueDictionary
 
-from dask.base import tokenize
 import geopandas
 import xarray
 from odc.geo.geobox import GeoBox
 
 from fused_local.cache import cache
+from fused_local.hash import tokenize
 
 VectorMappable = geopandas.GeoDataFrame | geopandas.GeoSeries
 RasterMappable = xarray.DataArray | xarray.Dataset
@@ -30,7 +30,8 @@ class TileFunc(Generic[P, TileR]):
     def __init__(self, func: Callable[Concatenate[GeoBox, P], TileR]) -> None:
         self.func = func
         self.name = func.__name__
-        self.hash = tokenize(func)  # TODO remove dask tokenize dependency
+        self.hash = tokenize(func)
+        print("TileFunc", self.name, self.hash)
         if (prev := self._instances.setdefault(self.name, self)) is not self:
             # actually this may be fine
             raise ValueError(f"{self.name} already exists! {prev=}, {self=}")
@@ -46,6 +47,7 @@ class TileFunc(Generic[P, TileR]):
         return f"TileFunc({self.func!r})"
 
     def __dask_tokenize__(self) -> str:
+        # Note our `tokenize` implementation special-cases dask_tokenize
         return self.hash
 
     @singledispatchmethod

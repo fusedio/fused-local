@@ -115,7 +115,6 @@ cycler==0.12.1
     # via matplotlib
 dask==2024.5.2
     # via distributed
-    # via fused-local
     # via odc-stac
     # via stackstac
 debugpy==1.8.1

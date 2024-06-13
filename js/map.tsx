@@ -9,7 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { MapState, TileLayer as TileLayerModel } from './generated/models';
 
-const tileUrl = (name: string, vmin: number, vmax: number, hash: string) => `http://localhost:8000/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}&hash=${hash}`;
+const tileUrl = (name: string, vmin: number, vmax: number, hash: string) => `/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}&hash=${hash}`;
 
 function App() {
     const [mapState, setMapState] = useState<MapState>(
@@ -32,6 +32,7 @@ function App() {
             const state = JSON.parse(event.data);
             console.log(state);
             setMapState(state);
+            setError(null);
         };
 
         eventSource.onerror = (event) => {
