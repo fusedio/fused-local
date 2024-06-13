@@ -1,4 +1,5 @@
 import functools
+import os
 from pathlib import Path
 from typing import Callable, ParamSpec, TypeVar
 import diskcache
@@ -10,7 +11,7 @@ R = TypeVar("R")
 
 _cache = diskcache.FanoutCache(
     "cache",  # TODO global / temp directory
-    shards=4,
+    shards=os.cpu_count() or 1,
     eviction_policy="least-recently-used",
     size_limit=2**30,  # 1 GB (default)
 )
