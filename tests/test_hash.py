@@ -49,7 +49,7 @@ class CallMeMaybe:
             "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
             "d0ff5974b6aa52cf562bea5921840c032a860a91a3512f7fe8f768f6bbe005f6",
             "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
-            "f3a1c81fc51ab4de7426cf775c0277572bed500bb3944459e9c5698017bd0c3b",
+            "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
             "dc937b59892604f5a86ac96936cd7ff09e25f18ae6b758e8014a24c7fa039e91",
             "4637e99b28a1ce112e8f4009dbf144f3a75a04d3e4b0c30b084aef21c5e3cfe6",
             "d6c909b3ac94a44d71f32c054cb4bb38b3965c81e5899e04aad7a3f4d4d6eb8f",
@@ -63,12 +63,12 @@ class CallMeMaybe:
             "0de29f28705aca2ba9a8b12f11dd264a4a2249b2b5e1ada9d08ca1a2cb127e1d",
             "e8798263438c84acf30068f517f8ccd3984c50b5a5a564fe7f4b14a43c50ae1a",
             "78b834079a24bb82de91531f87f7f68790cf71fc750c0bce89dce45e28122cd4",
-            "a29d1889f3817ef4988438f79599d3052c1f76c56969f235702d7a1016e414fa",
+            "8376056fa88ef0c63ccdaef810de9e6d74f02457c02ae62977425f689973488c",
             "811461a03c69f6780151a0ec56e9d815fa4208d6ebe4dc163c69f36880cb9f2e",
             "bc55788fc07834cf49a1df1e9dc29ab2650291566e019d38ec17f3ebbded5146",
             "3d3fd83e3329a7158557bb6f28032bc8a59e029474001ef7579f9ac5c803f248",
-            "c139ed89f9eddead41f7c0be6865d8fa2ea73bc53b5b853e7ac9ab580d71bffa",
-            "0a1ff5509c1189319d38e90615ad05b8981a876a71869435590c1079d6864d8f",
+            "41dccb521c5e55cbc84b9600bb64fba3f093f359e8a67700f850ced833a1a237",
+            "f088cb33d1ff8be4d1c392d2c92a66323ceb26ef565aeccfd6def400a7a9408f",
         ],
     ),
 )
@@ -82,8 +82,8 @@ def test_tokenize(constructor, expected):
     # used for getting the hashes to hardcode in the test.
     # run with `pytest -s 1>/dev/null`, then copy-paste in with multi-line editing
     print(ta, file=sys.stderr)
-    assert ta == tb
-    assert ta == expected
+    assert ta == tb, a
+    assert ta == expected, a
 
 
 def test_tokenize_func():
@@ -111,7 +111,7 @@ def test_tokenize_func():
         == t3
         # NOTE: hardcode the hash to ensure stability across restarts.
         # obviously when the implementation changes, update this as needed.
-        == "26a3b4745f04bc9095fb0c0e5f821aba6addbddc1b65c4ffb1f77ba4296087c6"
+        == "cbe9f68445c25a848d3256d5809c9308b7f272bbb2e4dfc55e6fd878d0523e8e"
     )
 
 
@@ -141,3 +141,23 @@ def test_tokenize_func_defaults():
         return x
 
     assert tokenize(f1) != tokenize(f2)
+
+
+GLOBAL_VAR = 0
+
+
+def test_tokenize_func_globals():
+    def f():  # type: ignore
+        return GLOBAL_VAR
+
+    t1 = tokenize(f)
+
+    global GLOBAL_VAR
+    GLOBAL_VAR = 1
+
+    def f():
+        return GLOBAL_VAR
+
+    t2 = tokenize(f)
+
+    assert t1 != t2

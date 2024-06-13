@@ -24,25 +24,36 @@ cloudpickle.
 import dataclasses
 import datetime
 import decimal
+import dis
 import hashlib
 import importlib.metadata
 import inspect
+import opcode
 import pathlib
 import pickle
 import types
 from collections.abc import Mapping, Sequence, Set
 from functools import partial, singledispatch
 from typing import Iterator
+import weakref
 
 import cloudpickle
 
 
-def tokenize(obj: object) -> str:
+def tokenize(*args: object, **kwargs: object) -> str:
     "Deterministically hash an object."
     hasher = hashlib.sha256()
+    for obj in args:
+        _tokenize_update(obj, hasher)
+    for k, obj in kwargs.items():
+        hasher.update(k.encode())
+        _tokenize_update(obj, hasher)
+    return hasher.hexdigest()
+
+
+def _tokenize_update(obj: object, hasher) -> None:
     for x in normalize(obj):
         hasher.update(x if isinstance(x, bytes) else str(x).encode())
-    return hasher.hexdigest()
 
 
 @singledispatch
@@ -61,7 +72,7 @@ def normalize(obj: object) -> Iterator[object]:
 
 
 @normalize.register
-def _(
+def normalize_identity(
     obj: int
     | float
     | str
@@ -81,14 +92,14 @@ def _(
 
 
 @normalize.register
-def _(obj: Sequence) -> Iterator[object]:
+def normalize_sequence(obj: Sequence) -> Iterator[object]:
     yield type(obj)
     for x in obj:
         yield from normalize(x)
 
 
 @normalize.register
-def _(obj: Mapping) -> Iterator[object]:
+def normalize_mapping(obj: Mapping) -> Iterator[object]:
     yield type(obj)
     for k, v in obj.items():
         yield from normalize(k)
@@ -96,31 +107,38 @@ def _(obj: Mapping) -> Iterator[object]:
 
 
 @normalize.register
-def _(obj: Set) -> Iterator[object]:
+def normalize_set(obj: Set) -> Iterator[object]:
     yield type(obj)
     for x in sorted(obj):
         yield from normalize(x)
 
 
 @normalize.register
-def _(obj: partial) -> Iterator[object]:
+def normalize_partial(obj: partial) -> Iterator[object]:
     yield from normalize(obj.func)
     yield from normalize(obj.args)
     yield from normalize(obj.keywords)
 
 
 @normalize.register
-def _(obj: types.FunctionType) -> Iterator[object]:
+def normalize_function(obj: types.FunctionType) -> Iterator[object]:
     yield from normalize(obj.__code__)  # --> CodeType
     yield from normalize(obj.__defaults__)
     yield from normalize(obj.__kwdefaults__)
     yield from normalize(obj.__closure__)  # --> CellType
-    # TODO probably should do this, but most of these will end up being pickled?
-    # yield from normalize(obj.__globals__)
+
+    # Normalize globals, but only the ones the function actually references.
+    # This ends up using `dis` on the bytecode, looking for `LOAD_GLOBAL` instructions,
+    # and seeing what names they refer to.
+    # https://github.com/cloudpipe/cloudpickle/blob/f111f7ab6d302e9/cloudpickle/cloudpickle.py#L719
+    global_names_used = _extract_code_globals(obj.__code__)
+    for k in global_names_used:
+        if v := obj.__globals__.get(k):
+            yield from normalize(v)
 
 
 @normalize.register
-def _(code: types.CodeType) -> Iterator[object]:
+def normalize_code(code: types.CodeType) -> Iterator[object]:
     # FIXME this is probably not sufficient?
     # What if the function references another function, and that one changes?
     # What if an imported function changes?
@@ -130,7 +148,7 @@ def _(code: types.CodeType) -> Iterator[object]:
 
 
 @normalize.register
-def _(cell: types.CellType) -> Iterator[object]:
+def normalize_cell(cell: types.CellType) -> Iterator[object]:
     # https://github.com/cloudpipe/cloudpickle/blob/f111f7ab6d3/cloudpickle/cloudpickle.py#L472-L477
     try:
         contents = cell.cell_contents
@@ -150,7 +168,7 @@ def normalize_bound_method(
 
 
 @normalize.register
-def _(obj: types.ModuleType) -> Iterator[object]:
+def normalize_module(obj: types.ModuleType) -> Iterator[object]:
     # HACK how should we actually normalize a module??
     yield type(obj)
     yield obj.__name__
@@ -162,7 +180,7 @@ def _(obj: types.ModuleType) -> Iterator[object]:
 
 
 @normalize.register
-def _(func: types.BuiltinFunctionType) -> Iterator[object]:
+def normalize_builtin(func: types.BuiltinFunctionType) -> Iterator[object]:
     # https://github.com/dask/dask/blob/da1d53af6fcbf53/dask/base.py#L1190-L1197
     self = getattr(func, "__self__", None)
     if self is not None and not inspect.ismodule(self):
@@ -203,6 +221,51 @@ def _normalize_with_pickle(o: object) -> Iterator[object]:
 
     yield pik
     yield from buffers
+
+
+_extract_code_globals_cache = weakref.WeakKeyDictionary()
+
+
+# https://github.com/cloudpipe/cloudpickle/blob/f111f7ab6d302e9b1/cloudpickle/cloudpickle.py#L305
+def _extract_code_globals(co: types.CodeType) -> dict[str, None]:
+    """Find all globals names read or written to by codeblock co."""
+    out_names = _extract_code_globals_cache.get(co)
+    if out_names is None:
+        # We use a dict with None values instead of a set to get a
+        # deterministic order and avoid introducing non-deterministic pickle
+        # bytes as a results.
+        out_names = {name: None for name in _walk_global_ops(co)}
+
+        # Declaring a function inside another one using the "def ..." syntax
+        # generates a constant code object corresponding to the one of the
+        # nested function's As the nested function may itself need global
+        # variables, we need to introspect its code, extract its globals, (look
+        # for code object in it's co_consts attribute..) and add the result to
+        # code_globals
+        if co.co_consts:
+            for const in co.co_consts:
+                if isinstance(const, types.CodeType):
+                    out_names.update(_extract_code_globals(const))
+
+        _extract_code_globals_cache[co] = out_names
+
+    return out_names
+
+
+# https://github.com/cloudpipe/cloudpickle/blob/f111f7ab6d302e/cloudpickle/cloudpickle.py#L380-L383
+STORE_GLOBAL = opcode.opmap["STORE_GLOBAL"]
+DELETE_GLOBAL = opcode.opmap["DELETE_GLOBAL"]
+LOAD_GLOBAL = opcode.opmap["LOAD_GLOBAL"]
+GLOBAL_OPS = (STORE_GLOBAL, DELETE_GLOBAL, LOAD_GLOBAL)
+
+
+# https://github.com/cloudpipe/cloudpickle/blob/f111f7ab6d302e/cloudpickle/cloudpickle.py#L403-L408
+def _walk_global_ops(code) -> Iterator[str]:
+    """Yield referenced name for global-referencing instructions in code."""
+    for instr in dis.get_instructions(code):
+        op = instr.opcode
+        if op in GLOBAL_OPS:
+            yield instr.argval
 
 
 # TODO numpy, pandas, etc
