@@ -1,5 +1,6 @@
 import os
 from functools import partial
+from pathlib import Path
 from typing import Callable, ParamSpec, TypeVar
 
 import trio
@@ -63,19 +64,15 @@ class WorkerPool:
             self._worker_type,
         )
 
-        print("opened worker context")
         await self._scale()
-        print("scaled up workers")
 
     async def _stop(self) -> None:
         # assumes lock is held
         if self._ctx is None:
             return
 
-        print("closing worker context")
         await self._ctx._aclose()
         self._ctx = None
-        print("closed worker context")
 
     async def _scale(self) -> None:
         # assumes lock is held
@@ -127,11 +124,12 @@ class WorkerPool:
 
 if __name__ == "__main__":
     from fused_local.user_code import (
-        USER_CODE_PATH,
         import_user_code,
         watch_with_event,
         RepeatEvent,
     )
+
+    USER_CODE_PATH = Path.cwd() / "example.py"
 
     def _worker_init():
         print(f"worker init {os.getpid()}")

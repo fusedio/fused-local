@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
+import textwrap
 from typing import AsyncIterator
 import webbrowser
 
@@ -53,14 +54,15 @@ async def lifespan(app: FastAPI):
         WORKER_POOL = WorkerPool(
             init=partial(import_user_code, config().user_code_path)
         )
+        print(f"Launching pool of {WORKER_POOL.n_workers} workers...")
         async with WORKER_POOL:
-            print("started worker pool")
+            print("Workers running")
 
             async def reimport_on_code_reload():
                 assert WORKER_POOL
                 while True:
                     await USER_CODE_CHANGED.wait()
-                    print("re-importing on worker pool")
+                    print("Code changed; re-importing on workers")
                     try:
                         # NOTE: for now, we just re-import without restarting worker
                         # processes, because it's so much faster. Ideally we might get a
@@ -71,21 +73,34 @@ async def lifespan(app: FastAPI):
                             reload_user_code, config().user_code_path
                         )
                     except trio.ClosedResourceError:
-                        print("not re-importing on pool")
                         return
                     POOL_RESTARTED_AFTER_CODE_CHANGE.reset()
 
             tg.start_soon(reimport_on_code_reload, name="Worker pool re-importer")
+
+            print(f"Map is ready to go at {config().url}")
+
+            if not config().dev:
+                print(
+                    "⚠️ Your browser may warn that the page is not trusted! Click through to visit the page anyway (you're just connecting to your own computer) ⚠️"
+                )
+                print("You can totally trust us right 😉")
+                print(
+                    textwrap.dedent("""
+                        Technical detail: we serve map tiles over HTTP/2, because then your browser will request every tile in parallel.
+                        With HTTP/1, your browser will only request 6 at a time---way slower!
+                        However, HTTP/2 requires HTTPS, so we have to make a local self-signed certificate to encrypt the connection.
+                        Because this is self-signed, your browser (correctly) warns you that it's not from a trusted certificate authority.
+                        """)
+                )
 
             if config().open_browser:
                 webbrowser.open_new_tab(config().url)
 
             yield
 
-            print("cancelling file watch")
+            print("Shutting down...")
             tg.cancel_scope.cancel()
-
-        print("closed worker pool")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -106,6 +121,7 @@ async def tile(
     # reload a tile when the user code changes, by changing the URL.
 ):
     assert WORKER_POOL
+    print(f"tile request: {layer} {z} {x} {y} {vmin} {vmax} {cmap} {hash}")
     png = await WORKER_POOL.run_sync(
         render_tile, layer, z, x, y, vmin, vmax, cmap, hash
     )
@@ -138,11 +154,8 @@ async def app_state():
         while True:
             # NOTE: we have to go to workers for this because we aren't actually
             # importing user code in the app for isolation reasons
-            print("new code")
             new_state = await WORKER_POOL.run_sync(_app_state_json)
-            print("sending sse reload")
             yield new_state
-            print("sent sse reload")
             # NOTE: if we just waited for `USER_CODE_CHANGED`, there's a race condition
             # between the pool restarting and getting the new state. We might get state
             # from the pool before it's restarted.
@@ -156,11 +169,9 @@ async def hmr_liveness(websocket: WebSocket):
     # https://paregis.me/posts/fastapi-frontend-development/
     try:
         await websocket.accept()
-        print(f"accepted {websocket}")
         await FRONTEND_CODE_CHANGED.wait()
-        print(f"closing websocket {websocket}")
+        print("Frontend code changed; reloading")
         await websocket.close()
-        print(f"closed {websocket}")
     except WebSocketDisconnect:
         pass
 

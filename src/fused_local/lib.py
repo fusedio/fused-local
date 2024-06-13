@@ -33,7 +33,6 @@ class TileFunc(Generic[P, TileR]):
         self.func = func
         self.name = func.__name__
         self.hash = tokenize(func)
-        print("TileFunc", self.name, self.hash)
         if (prev := self._instances.setdefault(self.name, self)) is not self:
             # actually this may be fine
             raise ValueError(f"{self.name} already exists! {prev=}, {self=}")
