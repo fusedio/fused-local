@@ -34,6 +34,7 @@ dependencies = [
     "sse-starlette>=2.1.0",
     "cloudpickle>=3.0.0",
     "geopy>=2.4.1",
+    "trio-parallel>=1.2.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
