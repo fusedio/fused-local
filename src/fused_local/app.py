@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
 
 from fused_local.lib import TileFunc
-from fused_local.models import MapState, TileLayer
+from fused_local.models import AppState, InitialMapState, TileLayer
 from fused_local.render import render_tile
 from fused_local.user_code import (
     USER_CODE_PATH,
@@ -100,8 +100,8 @@ def tile(
     return Response(png, media_type="image/png")
 
 
-def _map_state() -> MapState:
-    return MapState(
+def _app_state() -> AppState:
+    return AppState(
         layers=[
             TileLayer(
                 name=t.name,
@@ -114,22 +114,24 @@ def _map_state() -> MapState:
             )
             for t in TileFunc._instances.values()
         ],
-        # TODO allow configuring
-        longitude=-105.78,
-        latitude=35.79,
-        zoom=9,
+        initial_map_state=InitialMapState(
+            # TODO allow configuring
+            longitude=-105.78,
+            latitude=35.79,
+            zoom=9,
+        ),
     )
 
 
-@app.get("/map_state")
-async def map_state():
-    async def _map_state_generator() -> AsyncIterator[str]:
+@app.get("/app_state")
+async def app_state():
+    async def _app_state_generator() -> AsyncIterator[str]:
         while True:
             print("sending sse reload")
-            yield _map_state().model_dump_json()
+            yield _app_state().model_dump_json()
             await next_code_reload()
 
-    return EventSourceResponse(_map_state_generator())
+    return EventSourceResponse(_app_state_generator())
 
 
 @app.websocket("/hmr")

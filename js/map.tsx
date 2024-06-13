@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Map } from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import useSWR from "swr";
@@ -7,32 +7,60 @@ import { TileLayer } from '@deck.gl/geo-layers';
 import type { TileLayerPickingInfo } from '@deck.gl/geo-layers';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { MapState, TileLayer as TileLayerModel } from './generated/models';
+import { InitialMapState, AppState, TileLayer as TileLayerModel } from './generated/models';
+import { MapViewState } from "@deck.gl/core";
 
 const tileUrl = (name: string, vmin: number, vmax: number, hash: string) => `/tiles/${name}/{z}/{x}/{y}.png?vmin=${vmin}&vmax=${vmax}&hash=${hash}`;
 
 function App() {
-    const [mapState, setMapState] = useState<MapState>(
-        {
-            layers: [],
-            // TODO change default location
-            longitude: 0.45,
-            latitude: 51.47,
-            zoom: 7,
-        }
-    );
+    const [mapViewState, setMapViewState] = useState<MapViewState>({
+        // TODO change default location
+        longitude: 0.45,
+        latitude: 51.47,
+        zoom: 7,
+    });
+    const prevInitialMapState = useRef<InitialMapState>({ ...mapViewState });
+    const [tileLayers, setTileLayers] = useState<TileLayerModel[]>([]);
     const [isLoading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const eventSource = new EventSource("/map_state");
+        const eventSource = new EventSource("/app_state");
 
         eventSource.onmessage = (event) => {
-            setLoading(false);
-            const state = JSON.parse(event.data);
-            console.log(state);
-            setMapState(state);
-            setError(null);
+          const newState: AppState = JSON.parse(event.data);
+          console.log(newState.initial_map_state);
+
+          setTileLayers(newState.layers);
+
+          // Only reposition the map when the initial state defined on the backend
+          // has changed from whatever it previously was, i.e. the user adjusted
+          // a `configure_map` call.
+
+          // FIXME: somehow an extraneous `padding` property is ending up in the `prevInitialMapState`
+        // or the `newState.initial_map_state`. This makes absolutely no sense. Which object it ends up
+            // in seems to change depending on whether we copy `mapViewState` into `prevInitialMapState` at
+            // the beginning, or copy `newState.initial_map_state` into `prevInitialMapState` at the end.
+            // Also, running normally, the `console.log` here will show the `padding` property, but if you
+            // breakpoint and step through in the debugger, it doesn't (but it still inserts itself later somehow).
+            // So as a stupid hack workaround, we just compare the fields we care about. This is insane.
+          if (
+            newState.initial_map_state.latitude !==
+              prevInitialMapState.current.latitude ||
+            newState.initial_map_state.longitude !==
+              prevInitialMapState.current.longitude ||
+            newState.initial_map_state.zoom !== prevInitialMapState.current.zoom
+          ) {
+            console.log(
+              prevInitialMapState.current,
+              newState.initial_map_state
+            );
+            setMapViewState(newState.initial_map_state);
+            prevInitialMapState.current = { ...newState.initial_map_state };
+          }
+
+          setError(null);
+          setLoading(false);
         };
 
         eventSource.onerror = (event) => {
@@ -43,7 +71,7 @@ function App() {
         return () => eventSource.close();
     }, []);
 
-    const layers = mapState.layers.map((layer) => {
+    const layers = tileLayers.map((layer) => {
         return new TileLayer({
             id: layer.name,
             data: tileUrl(layer.name, layer.vmin, layer.vmax, layer.hash),
@@ -64,11 +92,8 @@ function App() {
     });
 
     return <DeckGL
-        initialViewState={{
-            longitude: mapState.longitude,
-            latitude: mapState.latitude,
-            zoom: mapState.zoom
-        }}
+        viewState={mapViewState}
+        onViewStateChange={e => setMapViewState(e.viewState)}
         controller
         getTooltip={({ tile }: TileLayerPickingInfo) => tile && `x:${tile.index.x}, y:${tile.index.y}, z:${tile.index.z}`}
         layers={layers}
@@ -100,8 +125,8 @@ function App() {
             }}
         >
             {isLoading && "Loading..."}
-            {error && "Error: " + error}
-            {mapState && <Layers layers={mapState.layers} />}
+            {error && <span style={{ color: 'red' }}>Disconnected from server</span>}
+            {tileLayers && <Layers layers={tileLayers} />}
         </aside></section>
     </DeckGL>
 }

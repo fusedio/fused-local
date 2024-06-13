@@ -13,11 +13,15 @@ class TileLayer(pydantic.BaseModel):
     vmax: int | float
 
 
-class MapState(pydantic.BaseModel):
-    layers: list[TileLayer]
+class InitialMapState(pydantic.BaseModel):
     longitude: float
     latitude: float
     zoom: int
+
+
+class AppState(pydantic.BaseModel):
+    layers: list[TileLayer]
+    initial_map_state: InitialMapState
 
 
 if __name__ == "__main__":
@@ -27,7 +31,7 @@ if __name__ == "__main__":
     # 2. `npm run build` calls `rye run build_ts`
     # 3. `npm run build:watch` watches this file for changes, as well as all the JS, and calls `npm run build`
 
-    schema = MapState.model_json_schema(mode="serialization")
+    schema = AppState.model_json_schema(mode="serialization")
     # print(json.dumps(schema, indent=2))
 
     args = ["npx", "json2ts"]
