@@ -5,6 +5,7 @@ description = "Add your description here"
 authors = [
     { name = "Gabe Joseph", email = "gjoseph92@gmail.com" }
 ]
+include = ["src/fused_local/frontend/*.html", "src/fused_local/frontend/*.js", "src/fused_local/frontend/*.css", "MANIFEST.in"]
 dependencies = [
     "numpy>=1.26.4",
     "xarray>=2024.5.0",
