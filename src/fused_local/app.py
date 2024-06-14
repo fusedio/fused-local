@@ -130,7 +130,7 @@ async def tile(
     # reload a tile when the user code changes, by changing the URL.
 ):
     assert WORKER_POOL
-    print(f"tile request: {layer} {z} {x} {y} {vmin} {vmax} {cmap} {hash}")
+    # print(f"tile request: {layer} {z} {x} {y} {vmin} {vmax} {cmap} {hash}")
     png = await WORKER_POOL.run_sync(
         render_tile, layer, z, x, y, vmin, vmax, cmap, hash
     )
