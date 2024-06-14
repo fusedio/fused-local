@@ -11,7 +11,7 @@ You write geospatial analysis code using the tools you already know, `fused-loca
 ## Installation
 
 ```
-$ pip install ...
+pip install 'git+ssh://git@github.com/gjoseph92/fused-local.git'
 ```
 
 ## Example
@@ -138,6 +138,7 @@ They are many. This is an extremely alpha prototype.
 - Multiple outputs from one function not supported yet (coming soon).
 - Generally configuring layers/the map from code.
 - Progress indication, invalidating old tiles, etc.
+- The dependencies are _insane_. There's a lot to pare down.
 
 ## Developing
 
