@@ -11,7 +11,7 @@ You write geospatial analysis code using the tools you already know, `fused-loca
 ## Installation
 
 ```
-pip install 'git+ssh://git@github.com/gjoseph92/fused-local.git'
+pip install git+https://github.com/fusedio/fused-local.git
 ```
 
 ## Example
@@ -82,7 +82,13 @@ def s2_scene_june(gbox: GeoBox) -> xr.Dataset:
 #     return comp.compute()
 ```
 
-Run fused-local on your file to open a map in your browser. Put the browser window and your code editor next to each other.
+_To run this example code, you'll also need to install the libraries it uses. `fused-local` as just another tool in your own project, where you manage the dependencies yourself._
+
+```
+pip install pystac-client odc-stac xarray
+```
+
+Run `fused-local` on your file to open a map in your browser.
 
 ```
 $ fused-local example.py
@@ -90,7 +96,9 @@ $ fused-local example.py
 
 _Note: the first time the page opens, the browser will tell you it's unsafe. Click through this, you're just connecting to your own computer. We're serving over HTTPS so that we can use HTTP/2 for more parallelism, which requires generating a self-signed certificate. You also may have to reload the page the first couple times for everything to work. This is terrible UX and hopefully can be improved some day somehow._
 
-Try un-commenting the other functions to see what happens.
+Put the browser window and your code editor next to each other.
+
+Try un-commenting the other functions and saving the file to see what happens.
 
 The last one (`s2_composite`) is a lot slower, because it's potentially loading and compositing ~10 GeoTIFFs for each tile on the map!
 
