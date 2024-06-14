@@ -24,14 +24,14 @@ def main(
     code_path: Annotated[
         Path, typer.Argument(help="Local .py script to watch and render")
     ],
+    open: Annotated[
+        bool, typer.Option(help="Open the map in the default browser")
+    ] = True,
     dev: Annotated[
         bool,
         typer.Option(
             help="Enable hot-reloading of frontend code, disable HTTP/2 and TLS"
         ),
-    ] = False,
-    open: Annotated[
-        bool, typer.Option(help="Open the map in the default browser")
     ] = False,
 ):
     """Code to map, instantly.
