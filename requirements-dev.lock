@@ -145,6 +145,7 @@ geocube==0.5.2
 geographiclib==2.0
     # via geopy
 geopandas==0.14.4
+    # via fused-local
     # via geocube
 geopy==2.4.1
     # via fused-local

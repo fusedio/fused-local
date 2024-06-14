@@ -39,6 +39,7 @@ async-lru==2.0.4
     # via jupyterlab
 attrs==23.2.0
     # via aiohttp
+    # via fiona
     # via fused-local
     # via jsonschema
     # via outcome
@@ -58,6 +59,7 @@ cachetools==4.2.4
     # via odc-geo
     # via stackstac
 certifi==2024.2.2
+    # via fiona
     # via httpcore
     # via httpx
     # via pyproj
@@ -73,13 +75,16 @@ click==8.1.7
     # via cligj
     # via dask
     # via distributed
+    # via fiona
     # via mercantile
     # via rasterio
     # via typer
     # via uvicorn
 click-plugins==1.1.1
+    # via fiona
     # via rasterio
 cligj==0.7.2
+    # via fiona
     # via rasterio
 cloudpickle==3.0.0
     # via dask
@@ -119,6 +124,8 @@ fastapi-cli==0.0.4
     # via fastapi
 fastjsonschema==2.19.1
     # via nbformat
+fiona==1.9.6
+    # via geopandas
 fonttools==4.53.0
     # via matplotlib
 fqdn==1.5.1
@@ -130,6 +137,8 @@ fsspec==2024.6.0
     # via dask
 geographiclib==2.0
     # via geopy
+geopandas==0.14.4
+    # via fused-local
 geopy==2.4.1
     # via fused-local
 h11==0.14.0
@@ -280,6 +289,7 @@ numpy==1.26.4
     # via contourpy
     # via dask
     # via fused-local
+    # via geopandas
     # via matplotlib
     # via odc-geo
     # via pandas
@@ -300,6 +310,7 @@ overrides==7.7.0
 packaging==24.0
     # via dask
     # via distributed
+    # via geopandas
     # via ipykernel
     # via jupyter-server
     # via jupyterlab
@@ -308,6 +319,7 @@ packaging==24.0
     # via nbconvert
     # via xarray
 pandas==2.2.2
+    # via geopandas
     # via xarray
 pandocfilters==1.5.1
     # via nbconvert
@@ -351,6 +363,7 @@ pyparsing==3.1.2
     # via matplotlib
     # via snuggs
 pyproj==3.6.1
+    # via geopandas
     # via odc-geo
     # via stackstac
 python-dateutil==2.9.0.post0
@@ -402,6 +415,7 @@ setuptools==70.0.0
     # via jupyterlab
     # via rasterio
 shapely==2.0.4
+    # via geopandas
     # via odc-geo
 shellingham==1.5.4
     # via typer
@@ -410,6 +424,7 @@ simpervisor==1.0.0
 six==1.16.0
     # via asttokens
     # via bleach
+    # via fiona
     # via python-dateutil
     # via rfc3339-validator
 sniffio==1.3.1
