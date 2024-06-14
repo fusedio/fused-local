@@ -1,3 +1,13 @@
+"""
+Something kinda like a process pool, for Trio.
+
+Wraps ``trio-parallel`` to add support for restarting the worker pool.
+
+(We might want to use this when user code changes.)
+
+Currently we don't actually restart the pool because it's way too slow.
+"""
+
 import os
 from functools import partial
 from pathlib import Path

@@ -1,6 +1,6 @@
-from pathlib import Path
 import importlib.util
 import sys
+from pathlib import Path
 from types import ModuleType
 
 import anyio
@@ -43,6 +43,8 @@ def reload_user_code(path: Path) -> None:
 
 
 class RepeatEvent:
+    "anyio Event that can be reset"
+
     _event: anyio.Event
 
     def __init__(self) -> None:
@@ -64,6 +66,7 @@ class RepeatEvent:
 
 
 async def watch_with_event(path: Path, event: RepeatEvent) -> RepeatEvent:
+    "Watch a file/directory; reset the event every time it changes"
     async for _ in awatch(path):
         event.reset()
 

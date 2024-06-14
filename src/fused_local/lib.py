@@ -1,3 +1,10 @@
+"""
+User-facing functions of the ``fused_local`` library.
+
+Only `tile` and `configure_map` actually exist yet.
+The rest are ideas of what the interface will be like.
+"""
+
 from functools import singledispatchmethod
 import geopy.geocoders
 from typing import Callable, Concatenate, Generic, ParamSpec, Self, TypeVar

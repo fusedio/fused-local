@@ -1,3 +1,5 @@
+"Generate self-signed certificates for serving HTTPS locally"
+
 import datetime
 
 from os import PathLike

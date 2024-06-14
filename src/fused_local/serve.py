@@ -2,14 +2,13 @@ from pathlib import Path
 from typing import Annotated
 
 import trio
-from hypercorn.trio import serve
+import typer
 from hypercorn.config import Config as HyperConfig
+from hypercorn.trio import serve
 
+import fused_local.config
 from fused_local.app import app, setup_static_serving
 from fused_local.local_certs import generate_certs
-import fused_local.config
-
-import typer
 
 # TODO: we can't easily serve HTTP/2 over localhost, because it requires HTTPS.
 # The browser won't trust our self-signed certificates, which isn't great UX.

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 # from fused_local.cancellation_middleware import CancelOnDisconnectMiddleware
 
-pytest.mark.skip(reason="Test doesn't work")
+pytest.skip(reason="Test doesn't work", allow_module_level=True)
 
 app = FastAPI()
 # app.add_middleware(CancelOnDisconnectMiddleware)
