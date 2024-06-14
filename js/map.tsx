@@ -82,6 +82,8 @@ function App() {
             maxZoom: layer.max_zoom,
             pickable: true,
             visible: layer.visible,
+            // HTTPS currently means HTTP/2 for us, in which case we can let it rip!
+            maxRequests: window.location.protocol === "https:" ? -1 : 6,
 
             renderSubLayers: (props) => {
                 const { boundingBox } = props.tile;
