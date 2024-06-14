@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pystac_client
 import fused_local
@@ -5,8 +6,6 @@ import pystac
 import xarray as xr
 import odc.stac
 from odc.geo.geobox import GeoBox
-
-print("foo")
 
 fused_local.configure_map(
     title="Sentinel-2 demo",
@@ -17,25 +16,29 @@ fused_local.configure_map(
 
 @fused_local.tile
 def s2_scene_june(gbox: GeoBox) -> xr.Dataset:
-    item = pystac.Item.from_file(
-        "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2A_13SDV_20240601_0_L2A"
-    )
-    print(f"fetched item {item.id} {gbox}")
-    data = odc.stac.load([item], ["red", "green", "blue"], geobox=gbox)
-    print(f"loaded data for {item.id} {gbox}")
-    # idk why odc.stac doesn't handle nodata / offer an option to mask it
-    data = data.where(data != 0, np.nan)
-    return data
+    try:
+        item = pystac.Item.from_file(
+            "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2A_13SDV_20240601_0_L2A"
+        )
+        print(f"fetched item {item.id} {gbox} {os.getpid()=}")
+        data = odc.stac.load([item], ["red", "green", "blue"], geobox=gbox)
+        print(f"loaded data for {item.id} {gbox}")
+        # idk why odc.stac doesn't handle nodata / offer an option to mask it
+        data = data.where(data != 0, np.nan)
+        return data
+    except KeyboardInterrupt:
+        print("AAAAHAHGAGHA")
+        raise
 
 
-@fused_local.tile
-def s2_scene_march(gbox: GeoBox) -> xr.Dataset:
-    item = pystac.Item.from_file(
-        "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2B_13SDV_20240301_0_L2A"
-    )
-    data = odc.stac.load([item], ["red", "green", "blue"], geobox=gbox)
-    data = data.where(data != 0, np.nan)
-    return data
+# @fused_local.tile
+# def s2_scene_march(gbox: GeoBox) -> xr.Dataset:
+#     item = pystac.Item.from_file(
+#         "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2B_13SDV_20240301_0_L2A"
+#     )
+#     data = odc.stac.load([item], ["red", "green", "blue"], geobox=gbox)
+#     data = data.where(data != 0, np.nan)
+#     return data
 
 
 # @fused_local.tile
