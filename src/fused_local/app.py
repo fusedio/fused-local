@@ -105,6 +105,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# app.add_middleware(CancelOnDisconnectMiddleware)
+
+# TODO: handle tiles request cancellation.
+# Our middleware works, but trio-parallel SIGKILLs the worker processes,
+# so we'd be starting new ones every time you pan the map.
+# At a minimum, we need infra to scale the pool back up, but really we
+# need a way to SIGINT the worker process, basically, and get it to give up
+# what it's working on and become available without fully restarting.
+
 
 @app.get("/tiles/{layer}/{z}/{x}/{y}.png")
 async def tile(
