@@ -88,7 +88,7 @@ Run fused-local on your file to open a map in your browser. Put the browser wind
 $ fused-local example.py
 ```
 
-_Note: the first time the page opens, the browser will tell you it's unsafe. Click through this, you're just connecting to your own computer. We're serving over HTTPS so that we can use HTTP/2 for more parallelism, which requires generating a self-signed certificate. This is terrible UX and hopefully can be improved some day somehow._
+_Note: the first time the page opens, the browser will tell you it's unsafe. Click through this, you're just connecting to your own computer. We're serving over HTTPS so that we can use HTTP/2 for more parallelism, which requires generating a self-signed certificate. You also may have to reload the page the first couple times for everything to work. This is terrible UX and hopefully can be improved some day somehow._
 
 Try un-commenting the other functions to see what happens.
 
