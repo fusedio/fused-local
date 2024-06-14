@@ -45,11 +45,9 @@ attrs==23.2.0
     # via fiona
     # via fused-local
     # via jsonschema
-    # via morecantile
     # via outcome
     # via rasterio
     # via referencing
-    # via rio-tiler
     # via trio
     # via trio-parallel
 babel==2.15.0
@@ -58,13 +56,10 @@ beautifulsoup4==4.12.3
     # via nbconvert
 bleach==6.1.0
     # via nbconvert
-braceexpand==0.1.7
-    # via rio-viz
 branca==0.7.2
     # via ipyleaflet
 cachetools==4.2.4
     # via odc-geo
-    # via rio-tiler
     # via stackstac
 certifi==2024.2.2
     # via fiona
@@ -88,7 +83,6 @@ click==8.1.7
     # via mercantile
     # via planetary-computer
     # via rasterio
-    # via rio-cogeo
     # via typer
     # via uvicorn
 click-plugins==1.1.1
@@ -101,15 +95,11 @@ cloudpickle==3.0.0
     # via dask
     # via distributed
     # via fused-local
-color-operations==0.1.3
-    # via rio-tiler
 comm==0.2.2
     # via ipykernel
     # via ipywidgets
 contourpy==1.2.1
     # via matplotlib
-cramjam==2.8.3
-    # via starlette-cramjam
 cryptography==42.0.8
     # via fused-local
 cycler==0.12.1
@@ -138,8 +128,6 @@ fastapi==0.111.0
     # via fused-local
 fastapi-cli==0.0.4
     # via fastapi
-fastapi-slim==0.111.0
-    # via titiler-core
 fastjsonschema==2.19.1
     # via nbformat
 fiona==1.9.6
@@ -154,17 +142,13 @@ frozenlist==1.4.1
 fsspec==2024.6.0
     # via dask
 geocube==0.5.2
-    # via fused-local
 geographiclib==2.0
     # via geopy
-geojson-pydantic==1.1.0
-    # via titiler-core
 geopandas==0.14.4
     # via geocube
 geopy==2.4.1
     # via fused-local
 gunicorn==22.0.0
-    # via fused-local
 h11==0.14.0
     # via httpcore
     # via hypercorn
@@ -181,7 +165,6 @@ httptools==0.6.1
 httpx==0.27.0
     # via fastapi
     # via jupyterlab
-    # via rio-tiler
 hypercorn==0.17.3
     # via fused-local
 hyperframe==6.0.1
@@ -222,7 +205,6 @@ jinja2==3.1.4
     # via jupyterlab
     # via jupyterlab-server
     # via nbconvert
-    # via titiler-core
 json5==0.9.25
     # via jupyterlab-server
 jsonpointer==2.4
@@ -259,7 +241,7 @@ jupyter-server==2.14.1
     # via jupyterlab-server
     # via notebook
     # via notebook-shim
-jupyter-server-proxy==4.1.2
+jupyter-server-proxy==4.2.0
     # via stackstac
 jupyter-server-terminals==0.5.3
     # via jupyter-server
@@ -282,7 +264,6 @@ markdown-it-py==3.0.0
 markupsafe==2.1.5
     # via jinja2
     # via nbconvert
-    # via werkzeug
 matplotlib==3.9.0
     # via fused-local
     # via stackstac
@@ -295,11 +276,6 @@ mercantile==1.2.1
     # via stackstac
 mistune==3.0.2
     # via nbconvert
-morecantile==5.3.0
-    # via fused-local
-    # via rio-cogeo
-    # via rio-tiler
-    # via titiler-core
 msgpack==1.0.8
     # via distributed
 multidict==6.0.5
@@ -315,40 +291,32 @@ nbformat==5.10.4
     # via nbconvert
 nest-asyncio==1.6.0
     # via ipykernel
-notebook==7.2.0
+notebook==7.2.1
     # via widgetsnbextension
 notebook-shim==0.2.4
     # via jupyterlab
     # via notebook
-numexpr==2.10.0
-    # via rio-tiler
 numpy==1.26.4
-    # via color-operations
     # via contourpy
     # via dask
     # via fused-local
     # via geocube
     # via geopandas
     # via matplotlib
-    # via numexpr
     # via odc-geo
     # via odc-stac
     # via pandas
     # via rasterio
-    # via rio-cogeo
-    # via rio-tiler
     # via rioxarray
     # via scipy
     # via shapely
     # via snuggs
-    # via titiler-core
     # via xarray
 odc-geo==0.4.5
     # via fused-local
     # via geocube
     # via odc-stac
 odc-stac==0.3.9
-    # via fused-local
 orjson==3.10.3
     # via fastapi
 outcome==1.3.0.post0
@@ -387,7 +355,6 @@ pillow==9.5.0
     # via matplotlib
     # via stackstac
 planetary-computer==1.0.0
-    # via fused-local
 platformdirs==4.2.2
     # via jupyter-core
 pluggy==1.5.0
@@ -411,14 +378,8 @@ pycparser==2.22
     # via cffi
 pydantic==2.7.2
     # via fastapi
-    # via fastapi-slim
     # via fused-local
-    # via geojson-pydantic
-    # via morecantile
     # via planetary-computer
-    # via rio-cogeo
-    # via rio-tiler
-    # via titiler-core
 pydantic-core==2.18.3
     # via pydantic
 pygments==2.18.0
@@ -431,7 +392,6 @@ pyparsing==3.1.2
 pyproj==3.6.1
     # via geocube
     # via geopandas
-    # via morecantile
     # via odc-geo
     # via rioxarray
     # via stackstac
@@ -439,9 +399,7 @@ pystac==1.10.1
     # via odc-stac
     # via planetary-computer
     # via pystac-client
-    # via rio-tiler
 pystac-client==0.8.2
-    # via fused-local
     # via planetary-computer
 pytest==8.2.2
 python-dateutil==2.9.0.post0
@@ -473,11 +431,8 @@ pyzmq==26.0.3
 rasterio==1.3.10
     # via geocube
     # via odc-stac
-    # via rio-cogeo
-    # via rio-tiler
     # via rioxarray
     # via stackstac
-    # via titiler-core
 referencing==0.35.1
     # via jsonschema
     # via jsonschema-specifications
@@ -494,13 +449,6 @@ rfc3986-validator==0.1.1
     # via jupyter-events
 rich==13.7.1
     # via typer
-rio-cogeo==5.3.0
-    # via rio-viz
-rio-tiler==6.6.1
-    # via fused-local
-    # via titiler-core
-rio-viz==0.12.2
-    # via fused-local
 rioxarray==0.15.5
     # via geocube
 rpds-py==0.18.1
@@ -509,12 +457,8 @@ rpds-py==0.18.1
 scipy==1.13.1
     # via geocube
     # via stackstac
-scooby==0.10.0
-    # via server-thread
 send2trash==1.8.3
     # via jupyter-server
-server-thread==0.2.0
-    # via rio-viz
 setuptools==70.0.0
     # via rasterio
 shapely==2.0.4
@@ -524,8 +468,6 @@ shellingham==1.5.4
     # via typer
 simpervisor==1.0.0
     # via jupyter-server-proxy
-simplejson==3.19.2
-    # via titiler-core
 six==1.16.0
     # via asttokens
     # via bleach
@@ -551,11 +493,7 @@ stackstac==0.5.0
     # via fused-local
 starlette==0.37.2
     # via fastapi
-    # via fastapi-slim
     # via sse-starlette
-    # via starlette-cramjam
-starlette-cramjam==0.3.3
-    # via rio-viz
 tblib==3.0.0
     # via distributed
     # via trio-parallel
@@ -564,8 +502,6 @@ terminado==0.18.1
     # via jupyter-server-terminals
 tinycss2==1.3.0
     # via nbconvert
-titiler-core==0.18.3
-    # via rio-viz
 toolz==0.12.1
     # via dask
     # via distributed
@@ -610,11 +546,9 @@ types-python-dateutil==2.9.0.20240316
     # via arrow
 typing-extensions==4.12.0
     # via fastapi
-    # via fastapi-slim
     # via ipython
     # via pydantic
     # via pydantic-core
-    # via titiler-core
     # via typer
 tzdata==2024.1
     # via pandas
@@ -627,9 +561,6 @@ urllib3==2.2.1
     # via requests
 uvicorn==0.30.1
     # via fastapi
-    # via fused-local
-    # via rio-viz
-    # via server-thread
     # via sse-starlette
 uvloop==0.19.0
     # via uvicorn
@@ -648,8 +579,6 @@ websocket-client==1.8.0
 websockets==12.0
     # via fused-local
     # via uvicorn
-werkzeug==3.0.3
-    # via server-thread
 widgetsnbextension==3.6.6
     # via ipywidgets
 wsproto==1.2.0
@@ -660,7 +589,7 @@ xarray==2024.5.0
     # via odc-stac
     # via rioxarray
     # via stackstac
-xyzservices==2024.4.0
+xyzservices==2024.6.0
     # via ipyleaflet
 yarl==1.9.4
     # via aiohttp
